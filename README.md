@@ -1,2 +1,2 @@
 # Bachelor
-Kode til bachelor
+Kode
