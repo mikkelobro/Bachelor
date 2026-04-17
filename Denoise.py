@@ -19,6 +19,9 @@ noise_level = 0.05
 noise = noise_level * np.random.randn(len(x))
 x_noisy = x + noise
 
+x_out = np.int16(x_noisy / np.max(np.abs(x_noisy)) * 32767)
+wavfile.write("noisy.wav", fs, x_out)
+
 # Apply DWT
 level = 9   # typical choice for audio
 
