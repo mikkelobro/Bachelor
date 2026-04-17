@@ -1,0 +1,3 @@
+from scipy.io import wavfile
+
+fs, x = wavfile.read("Mikkel_24år.wav")
