@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pywt
 
-# --- Load original ---
+# Load no noise
 fs1, x = wavfile.read("Mikkel_24år.wav")
 
 if x.ndim > 1:
@@ -11,7 +11,7 @@ if x.ndim > 1:
 
 x = x / np.max(np.abs(x))
 
-# --- Load denoised ---
+# Load denoised
 fs2, x_denoised = wavfile.read("denoised.wav")
 
 if x_denoised.ndim > 1:
@@ -27,11 +27,11 @@ fs = fs1
 time = np.arange(len(x)) / fs
 sampling_period = np.diff(time).mean()
 
-# --- perform CWT ---
+# Perform CWT
 wavelet = "cmor1.5-1.0"
 widths = np.geomspace(1, 1024, num=100)
 
-# Original
+# No noise
 cwt_orig, freqs = pywt.cwt(x, widths, wavelet, sampling_period=sampling_period)
 cwt_orig = np.abs(cwt_orig[:-1, :-1])
 
