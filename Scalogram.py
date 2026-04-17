@@ -3,54 +3,62 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pywt
 
-# Upload file
-fs, x = wavfile.read("Mikkel_24år.wav")
+# --- Load original ---
+fs1, x = wavfile.read("Mikkel_24år.wav")
 
-# Convert to mono
 if x.ndim > 1:
     x = np.mean(x, axis=1)
 
-# Normalize
 x = x / np.max(np.abs(x))
 
+# --- Load denoised ---
+fs2, x_denoised = wavfile.read("denoised.wav")
 
+if x_denoised.ndim > 1:
+    x_denoised = np.mean(x_denoised, axis=1)
 
-# Plot audio file
-t = np.arange(len(x)) / fs
+x_denoised = x_denoised / np.max(np.abs(x_denoised))
 
-plt.plot(t, x)
-plt.xlabel("Time [s]")
-plt.ylabel("Amplitude")
-plt.title("Audio Signal")
-#plt.show()
-
-# CWT
+# Ensure same sampling rate
+assert fs1 == fs2
+fs = fs1
 
 # Time axis
 time = np.arange(len(x)) / fs
-sampling_period = 1 / fs
-wavelet = "cmor1.5-1.0"
+sampling_period = np.diff(time).mean()
 
-# Logarithmic scales (important)
+# --- perform CWT ---
+wavelet = "cmor1.5-1.0"
 widths = np.geomspace(1, 1024, num=100)
 
-# Continuous Wavelet Transform
-cwtmatr, freqs = pywt.cwt(x, widths, wavelet, sampling_period=sampling_period)
+# Original
+cwt_orig, freqs = pywt.cwt(x, widths, wavelet, sampling_period=sampling_period)
+cwt_orig = np.abs(cwt_orig[:-1, :-1])
 
-# Magnitude (scalogram)
-S = np.log1p(np.abs(cwtmatr))   # log scaling for contrast
+# Denoised
+cwt_denoised, _ = pywt.cwt(x_denoised, widths, wavelet, sampling_period=sampling_period)
+cwt_denoised = np.abs(cwt_denoised[:-1, :-1])
 
-# Plot
-plt.figure(figsize=(8,5))
-plt.pcolormesh(time, freqs, S, shading='auto', cmap='inferno')
+# --- plot result ---
+fig, axs = plt.subplots(2, 1, figsize=(8,8))
 
-plt.yscale("log")
-plt.ylim(50, 4000)   # speech frequency range
+# Original scalogram
+pcm1 = axs[0].pcolormesh(time[:-1], freqs[:-1], cwt_orig)
+axs[0].set_yscale("log")
+axs[0].set_ylim(50, 4000)
+axs[0].set_xlabel("Time (s)")
+axs[0].set_ylabel("Frequency (Hz)")
+axs[0].set_title("Original Signal Scalogram")
+fig.colorbar(pcm1, ax=axs[0])
 
-plt.xlabel("Time [s]")
-plt.ylabel("Frequency [Hz]")
-plt.title("Scalogram (Morlet Wavelet)")
-plt.colorbar(label="Log Amplitude")
+# Denoised scalogram
+pcm2 = axs[1].pcolormesh(time[:-1], freqs[:-1], cwt_denoised)
+axs[1].set_yscale("log")
+axs[1].set_ylim(50, 4000)
+axs[1].set_xlabel("Time (s)")
+axs[1].set_ylabel("Frequency (Hz)")
+axs[1].set_title("Denoised Signal Scalogram")
+fig.colorbar(pcm2, ax=axs[1])
 
 plt.tight_layout()
 plt.show()
