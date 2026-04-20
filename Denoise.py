@@ -24,8 +24,11 @@ wavfile.write("Audio files/With noise/noisy.wav", fs, x_out)
 
 # Apply DWT
 level = 9  
-
 coeffs = pywt.wavedec(x_noisy, 'Haar', level=level)
+
+# Daubechi
+#coeffs = pywt.wavedec(x_noisy, 'db2')
+
 
 # Thresholding
 coeffs_thresh = [coeffs[0]]
@@ -71,6 +74,9 @@ for d in coeffs[1:]:
 
 # IDWT
 x_denoised = pywt.waverec(coeffs_thresh, 'haar')
+
+# Daubechi
+#x_denoised = pywt.waverec(coeffs_thresh, 'db2')
 
 # Denoised wav file
 x_out = np.int16(x_denoised / np.max(np.abs(x_denoised)) * 32767)
