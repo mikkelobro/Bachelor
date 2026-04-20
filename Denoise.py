@@ -23,7 +23,7 @@ x_out = np.int16(x_noisy / np.max(np.abs(x_noisy)) * 32767)
 wavfile.write("Audio files/With noise/noisy.wav", fs, x_out)
 
 # Apply DWT
-level = 9  
+level = 4
 coeffs = pywt.wavedec(x_noisy, 'Haar', level=level)
 
 # Daubechi
@@ -65,8 +65,7 @@ for d in coeffs[1:]:
     #d_thresh = np.sign(d) * np.maximum(np.abs(d) - lam_j, 0)
 
     # Semi thresholding
-    beta = 0.5
-    lam1 = beta * sigma_j * np.sqrt(2 * np.log(len(d)))
+    lam1 = lam_j
     lam2 = 2 * lam1   
     d_thresh = semi_soft(d, lam1, lam2)
 
