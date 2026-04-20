@@ -18,15 +18,15 @@ t = np.linspace(0, 1, len(x))
 f = 5
 A = 0.5
 noise_level = 0.05
-noise = noise_level * np.random.randn(len(x))  #* (A + 1 + np.sin(f * np.pi * t))
+noise = noise_level * np.random.randn(len(x))  * (A + 1 + np.sin(f * np.pi * t))
 x_noisy = x + noise
 
 x_out = np.int16(x_noisy / np.max(np.abs(x_noisy)) * 32767)
 wavfile.write("Audio files/With noise/noisy.wav", fs, x_out)
 
 # Apply DWT
-wavelet = 'Haar'
-level = 4
+wavelet = 'DB4'
+level = 6
 coeffs = pywt.wavedec(x_noisy, wavelet, level=level)
 
 # VisuShrink (compare thresholding functions)
