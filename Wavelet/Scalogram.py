@@ -1,58 +1,46 @@
-from scipy.io import wavfile
-import numpy as np
 import matplotlib.pyplot as plt
 import pywt
+from scipy.io import wavfile
+import numpy as np
 
-# No noise signal
-fs1, x = wavfile.read("Mikkel_24år.wav")
-if x.ndim > 1:
-    x = np.mean(x, axis=1)
-x = x / np.max(np.abs(x))
+fs1, x_orig = wavfile.read("Audio files/No noise/Mikkel_24år.wav")
+fs2, x_noisy_file = wavfile.read("Audio files/With noise/noisy.wav")
+fs3, x_sure_file = wavfile.read("Audio files/Denoised/sure_soft.wav")
 
-# Denoised
-fs2, x_denoised = wavfile.read("denoised.wav")
-if x_denoised.ndim > 1:
-    x_denoised = np.mean(x_denoised, axis=1)
-x_denoised = x_denoised / np.max(np.abs(x_denoised))
+def plot_scalogram(signal, title, fs):
+    signal = signal.astype(float)
 
-# CWT
-wavelet = "cmor1.5-1.0"
-widths = np.geomspace(1, 1024, num=100)
+    # Time axis
+    t = np.arange(len(signal)) / fs
 
-# No noise
-time1 = np.arange(len(x)) / fs1
-sampling_period1 = np.diff(time1).mean()
+    # Logarithmic scales
+    scales = np.geomspace(1, 1024, num=100)
 
-cwt_orig, freqs1 = pywt.cwt(x, widths, wavelet, sampling_period=sampling_period1)
-cwt_orig = np.log1p(np.abs(cwt_orig[:-1, :-1]))
+    # CWT
+    cwtmatr, freqs = pywt.cwt(signal, scales, 'cmor1.5-1.0', sampling_period=1/fs)
+    cwtmatr = np.abs(cwtmatr[:-1, :-1])
 
-# Denoised
-time2 = np.arange(len(x_denoised)) / fs2
-sampling_period2 = np.diff(time2).mean()
+    # Plot
+    pcm = plt.pcolormesh(t, freqs, cwtmatr)
+    
+    plt.yscale("log")
+    plt.ylabel("Frequency [Hz]")
+    plt.xlabel("Time [s]")
+    plt.title(title)
+    plt.colorbar(pcm)
 
-cwt_denoised, freqs2 = pywt.cwt(x_denoised, widths, wavelet, sampling_period=sampling_period2)
-cwt_denoised = np.log1p(np.abs(cwt_denoised[:-1, :-1]))
 
-# plot
-fig, axs = plt.subplots(2, 1, figsize=(8,8))
+# Scalograms
+plt.figure(figsize=(12, 10))
 
-# No noise
-pcm1 = axs[0].pcolormesh(time1[:-1], freqs1[:-1], cwt_orig, cmap='inferno')
-axs[0].set_yscale("log")
-axs[0].set_ylim(50, 4000)
-axs[0].set_title("Original Signal")
-axs[0].set_xlabel("Time (s)")
-axs[0].set_ylabel("Frequency (Hz)")
-fig.colorbar(pcm1, ax=axs[0])
+plt.subplot(3,1,1)
+plot_scalogram(x_orig, "Scalogram - Original Signal", fs1)
 
-# Denoised
-pcm2 = axs[1].pcolormesh(time2[:-1], freqs2[:-1], cwt_denoised, cmap='inferno')
-axs[1].set_yscale("log")
-axs[1].set_ylim(50, 4000)
-axs[1].set_title("Denoised Signal")
-axs[1].set_xlabel("Time (s)")
-axs[1].set_ylabel("Frequency (Hz)")
-fig.colorbar(pcm2, ax=axs[1])
+plt.subplot(3,1,2)
+plot_scalogram(x_noisy_file, "Scalogram - Noisy Signal", fs2)
+
+plt.subplot(3,1,3)
+plot_scalogram(x_sure_file, "Scalogram - Denoised (SURE + Soft)", fs3)
 
 plt.tight_layout()
 plt.show()
