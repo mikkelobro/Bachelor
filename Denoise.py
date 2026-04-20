@@ -65,9 +65,9 @@ for d in coeffs[1:]:
     #d_thresh = np.sign(d) * np.maximum(np.abs(d) - lam_j, 0)
 
     # Semi thresholding
-    alpha = 0.5
-    lam1 = alpha * sigma_j * np.sqrt(2 * np.log(len(d)))
-    lam2 = 2 * lam1   # typical choice
+    beta = 0.5
+    lam1 = beta * sigma_j * np.sqrt(2 * np.log(len(d)))
+    lam2 = 2 * lam1   
     d_thresh = semi_soft(d, lam1, lam2)
 
     coeffs_thresh.append(d_thresh)
