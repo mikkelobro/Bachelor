@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pywt
 
 # Upload file
-fs, x = wavfile.read("Mikkel_24år.wav")
+fs, x = wavfile.read("Audio files/No noise/Mikkel_24år.wav")
 
 # Convert to mono
 if x.ndim > 1:
@@ -20,12 +20,15 @@ noise = noise_level * np.random.randn(len(x))
 x_noisy = x + noise
 
 x_out = np.int16(x_noisy / np.max(np.abs(x_noisy)) * 32767)
-wavfile.write("noisy.wav", fs, x_out)
+wavfile.write("Audio files/With noise/noisy.wav", fs, x_out)
 
 # Apply DWT
-level = 9   # typical choice for audio
-
+level = 4
 coeffs = pywt.wavedec(x_noisy, 'Haar', level=level)
+
+# Daubechi
+#coeffs = pywt.wavedec(x_noisy, 'db2')
+
 
 # Thresholding
 coeffs_thresh = [coeffs[0]]
@@ -62,9 +65,8 @@ for d in coeffs[1:]:
     #d_thresh = np.sign(d) * np.maximum(np.abs(d) - lam_j, 0)
 
     # Semi thresholding
-    alpha = 0.5
-    lam1 = alpha * sigma_j * np.sqrt(2 * np.log(len(d)))
-    lam2 = 2 * lam1   # typical choice
+    lam1 = lam_j
+    lam2 = 2 * lam1   
     d_thresh = semi_soft(d, lam1, lam2)
 
     coeffs_thresh.append(d_thresh)
@@ -72,9 +74,12 @@ for d in coeffs[1:]:
 # IDWT
 x_denoised = pywt.waverec(coeffs_thresh, 'haar')
 
+# Daubechi
+#x_denoised = pywt.waverec(coeffs_thresh, 'db2')
+
 # Denoised wav file
 x_out = np.int16(x_denoised / np.max(np.abs(x_denoised)) * 32767)
-wavfile.write("denoised.wav", fs, x_out)
+wavfile.write("Audio files/Denoised/denoised.wav", fs, x_out)
 
 snr_noisy = 10 * np.log10(
     np.sum(x**2) / np.sum((x - x_noisy)**2)
