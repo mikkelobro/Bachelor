@@ -22,15 +22,18 @@ x_out = np.int16(x_noisy / np.max(np.abs(x_noisy)) * 32767)
 wavfile.write("Audio files/With noise/noisy.wav", fs, x_out)
 
 # Apply DWT
-wavelet = 'Haar'
+wavelet = 'DB4'
 level = 4
 coeffs = pywt.wavedec(x_noisy, wavelet, level=level)
 
-# Thresholding
-coeffs_thresh_hard = [coeffs[0]] # Keeps approximation unchanged
-coeffs_thresh_soft = [coeffs[0]] 
-coeffs_thresh_semi = [coeffs[0]] 
-coeffs_thresh_sure = [coeffs[0]]
+# VisuShrink (compare thresholding functions)
+coeffs_visu_hard = [coeffs[0]]
+coeffs_visu_soft = [coeffs[0]]
+coeffs_visu_semi = [coeffs[0]]
+
+# Adaptive methods (compare threshold selection)
+coeffs_sure_soft = [coeffs[0]]
+coeffs_bayes_soft = [coeffs[0]]
 
 # Semi soft function
 def semi_soft(d, lam1, lam2):
@@ -52,6 +55,7 @@ def semi_soft(d, lam1, lam2):
     return out
 
 # SURE function
+sigma = np.median(np.abs(coeffs[-1])) / 0.6745
 def sure_threshold(d, sigma):
     d = np.asarray(d)
     n = len(d)
@@ -72,34 +76,58 @@ def sure_threshold(d, sigma):
 
     return lambdas[np.argmin(risk)]
 
+# BayesShrink function
+def bayes_threshold(d, sigma):
+    d = np.asarray(d)
+    
+    # Total variance at level j
+    var_d = np.mean(d**2)
+    
+    # Signal variance
+    sigma_x = np.sqrt(max(var_d - sigma**2, 0))
+    
+    # Avoid division by zero
+    if sigma_x < 1e-8:
+        return np.max(np.abs(d))
+    
+    # BayesShrink threshold
+    return sigma**2 / sigma_x
+
 for d in coeffs[1:]:
     sigma_j = np.median(np.abs(d)) / 0.6745
     lam_j = sigma_j * np.sqrt(2 * np.log(len(d)))
 
     # Hard thresholding
     d_thresh_hard = d * (np.abs(d) > lam_j)
-    coeffs_thresh_hard.append(d_thresh_hard)
+    coeffs_visu_hard.append(d_thresh_hard)
 
     # Soft thresholding
     d_thresh_soft = np.sign(d) * np.maximum(np.abs(d) - lam_j, 0)
-    coeffs_thresh_soft.append(d_thresh_soft)
+    coeffs_visu_soft.append(d_thresh_soft)
 
     # Semi-soft
     lam1 = lam_j
     lam2 = 2 * lam1   
     d_thresh_semi = semi_soft(d, lam1, lam2)
-    coeffs_thresh_semi.append(d_thresh_semi)
+    coeffs_visu_semi.append(d_thresh_semi)
 
-    # SURE thresholding
-    lam_sure = sure_threshold(d, sigma_j)
+    # Soft with SURE
+    lam_sure = sure_threshold(d, sigma)
     d_thresh_sure = np.sign(d) * np.maximum(np.abs(d) - lam_sure, 0)
-    coeffs_thresh_sure.append(d_thresh_sure)
+    coeffs_sure_soft.append(d_thresh_sure)
+
+    # Soft with BayesShrink
+    lam_bayes = bayes_threshold(d, sigma)
+    d_thresh_bayes = np.sign(d) * np.maximum(np.abs(d) - lam_bayes, 0)
+    coeffs_bayes_soft.append(d_thresh_bayes)
 
 # IDWT
-x_denoised_hard = pywt.waverec(coeffs_thresh_hard, wavelet)
-x_denoised_soft = pywt.waverec(coeffs_thresh_soft, wavelet)
-x_denoised_semi = pywt.waverec(coeffs_thresh_semi, wavelet)
-x_denoised_sure = pywt.waverec(coeffs_thresh_sure, wavelet)
+x_visu_hard = pywt.waverec(coeffs_visu_hard, wavelet)
+x_visu_soft = pywt.waverec(coeffs_visu_soft, wavelet)
+x_visu_semi = pywt.waverec(coeffs_visu_semi, wavelet)
+
+x_sure_soft = pywt.waverec(coeffs_sure_soft, wavelet)
+x_bayes_soft = pywt.waverec(coeffs_bayes_soft, wavelet)
 
 # Save files
 def save_audio(signal, filename):
@@ -108,10 +136,13 @@ def save_audio(signal, filename):
     x_out = np.int16(signal * 32767)
     wavfile.write(filename, fs, x_out)
 
-save_audio(x_denoised_hard, "Audio files/Denoised/hard.wav")
-save_audio(x_denoised_soft, "Audio files/Denoised/soft.wav")
-save_audio(x_denoised_semi, "Audio files/Denoised/semi.wav")
-save_audio(x_denoised_sure, "Audio files/Denoised/sure.wav")
+save_audio(x_visu_hard, "Audio files/Denoised/visu_hard.wav")
+save_audio(x_visu_soft, "Audio files/Denoised/visu_soft.wav")
+save_audio(x_visu_semi, "Audio files/Denoised/visu_semi.wav")
+
+save_audio(x_sure_soft, "Audio files/Denoised/sure_soft.wav")
+save_audio(x_bayes_soft, "Audio files/Denoised/bayes_soft.wav")
+
 
 # SNR comparison
 def compute_snr(original, noisy):
@@ -121,14 +152,23 @@ def compute_snr(original, noisy):
 
 snr_noisy = compute_snr(x, x_noisy)
 
-snr_hard = compute_snr(x, x_denoised_hard[:len(x)])
-snr_soft = compute_snr(x, x_denoised_soft[:len(x)])
-snr_semi = compute_snr(x, x_denoised_semi[:len(x)])
-snr_sure = compute_snr(x, x_denoised_sure[:len(x)])
+# VisuShrink
+snr_visu_hard = compute_snr(x, x_visu_hard[:len(x)])
+snr_visu_soft = compute_snr(x, x_visu_soft[:len(x)])
+snr_visu_semi = compute_snr(x, x_visu_semi[:len(x)])
+
+# SURE and BayesShrink
+snr_sure = compute_snr(x, x_sure_soft[:len(x)])
+snr_bayes = compute_snr(x, x_bayes_soft[:len(x)])
 
 print("SNR comparison (dB):")
-print(f"Noisy: {snr_noisy:.2f}")
-print(f"Hard:  {snr_hard:.2f}")
-print(f"Soft:  {snr_soft:.2f}")
-print(f"Semi:  {snr_semi:.2f}")
-print(f"SURE:  {snr_sure:.2f}")
+print(f"Noisy:        {snr_noisy:.2f}")
+
+print("\nVisuShrink:")
+print(f"Hard:         {snr_visu_hard:.2f}")
+print(f"Soft:         {snr_visu_soft:.2f}")
+print(f"Semi-soft:    {snr_visu_semi:.2f}")
+
+print("\nAdaptive (Soft threshold):")
+print(f"SURE:         {snr_sure:.2f}")
+print(f"BayesShrink:  {snr_bayes:.2f}")
