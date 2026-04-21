@@ -13,21 +13,24 @@ if x.ndim > 1:
 # Normalize
 x = x / np.max(np.abs(x))
 
-# Aply noise
+# Apply noise
 t = np.linspace(0, 1, len(x)) 
 f = 5
 A = 0.5
 noise_level = 0.05
-noise = noise_level * np.random.randn(len(x))  * (A + 1 + np.sin(f * np.pi * t))
+noise = noise_level * np.random.randn(len(x))  #* (A + 1 + np.sin(f * np.pi * t))
 x_noisy = x + noise
 
 x_out = np.int16(x_noisy / np.max(np.abs(x_noisy)) * 32767)
 wavfile.write("Audio files/With noise/noisy.wav", fs, x_out)
 
 # Apply DWT
-wavelet = 'DB4'
-level = 6
+wavelet = 'haar'
+level = 4
+d = 2 # Detail space to be removed. used later in code
 coeffs = pywt.wavedec(x_noisy, wavelet, level=level)
+
+# Remove detail coefficients
 
 # VisuShrink (compare thresholding functions)
 coeffs_visu_hard = [coeffs[0]]
@@ -124,6 +127,10 @@ for d in coeffs[1:]:
     d_thresh_bayes = np.sign(d) * np.maximum(np.abs(d) - lam_bayes, 0)
     coeffs_bayes_soft.append(d_thresh_bayes)
 
+# Removing detail space
+coeffs_mod = coeffs.copy()
+coeffs_mod[-d:] = [np.zeros_like(c) for c in coeffs[-d:]]
+
 # IDWT
 x_visu_hard = pywt.waverec(coeffs_visu_hard, wavelet)
 x_visu_soft = pywt.waverec(coeffs_visu_soft, wavelet)
@@ -131,6 +138,8 @@ x_visu_semi = pywt.waverec(coeffs_visu_semi, wavelet)
 
 x_sure_soft = pywt.waverec(coeffs_sure_soft, wavelet)
 x_bayes_soft = pywt.waverec(coeffs_bayes_soft, wavelet)
+
+x_mod = pywt.waverec(coeffs_mod, wavelet)
 
 # Save files
 def save_audio(signal, filename):
@@ -145,6 +154,7 @@ save_audio(x_visu_semi, "Audio files/Denoised/visu_semi.wav")
 
 save_audio(x_sure_soft, "Audio files/Denoised/sure_soft.wav")
 save_audio(x_bayes_soft, "Audio files/Denoised/bayes_soft.wav")
+save_audio(x_mod, "Audio files/Denoised/remove_detail.wav")
 
 
 # SNR comparison
@@ -164,6 +174,8 @@ snr_visu_semi = compute_snr(x, x_visu_semi[:len(x)])
 snr_sure = compute_snr(x, x_sure_soft[:len(x)])
 snr_bayes = compute_snr(x, x_bayes_soft[:len(x)])
 
+snr_mod = compute_snr(x, x_mod[:len(x)])
+
 print("SNR comparison (dB):")
 print(f"Noisy:        {snr_noisy:.2f}")
 
@@ -171,6 +183,7 @@ print("\nVisuShrink:")
 print(f"Hard:         {snr_visu_hard:.2f}")
 print(f"Soft:         {snr_visu_soft:.2f}")
 print(f"Semi-soft:    {snr_visu_semi:.2f}")
+print(f"remove detail:    {snr_mod:.2f}")
 
 print("\nAdaptive (Soft threshold):")
 print(f"SURE:         {snr_sure:.2f}")

@@ -9,6 +9,7 @@ fs3, x_sure_file = wavfile.read("Audio files/Denoised/sure_soft.wav")
 
 def plot_scalogram(signal, title, fs):
     signal = signal.astype(float)
+    signal = signal / np.max(np.abs(signal))
 
     # Time axis
     t = np.arange(len(signal)) / fs
