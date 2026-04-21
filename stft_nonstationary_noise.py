@@ -10,14 +10,20 @@ f0, f1 = 1, 500
 chirp_rate = (f1 - f0)/T
 signal = np.sin(2*np.pi*(f0*t + 0.5*chirp_rate*t**2))
 
-noise = 0.2*np.random.randn(len(t))
+# --- Ny støj ---
+t_noise = np.linspace(0, 1, len(signal))
+f = 5
+A = 0.5
+noise_level = 0.05
+noise = noise_level * np.random.randn(len(signal)) * (A + 1 + np.sin(f*np.pi*t_noise))
+
 x = signal + noise
 
 # --- Vælg time-segment ---
-N = 32
+N = 1
 win_len = len(x)//N
 
-segment_id = 10  # skift denne: 0,1,2,3,4
+segment_id = 0
 seg_start = segment_id * win_len
 seg_end = seg_start + win_len
 
@@ -38,19 +44,17 @@ for i in range(0, len(x_win) - win_size, hop):
     X = np.fft.rfft(frame)
     stft_seg.append(np.abs(X))
 
-stft_seg = np.array(stft_seg).T  # shape: [freq_bins, time_frames_seg]
+stft_seg = np.array(stft_seg).T
 
-# --- 2) Lav en "tom" STFT for hele signalet (samme tids-grid som en fuld STFT ville have) ---
+# --- 2) Lav en "tom" STFT for hele signalet ---
 num_frames_full = 1 + (len(x) - win_size) // hop
 freq_bins = stft_seg.shape[0]
 
-stft_full = np.full((freq_bins, num_frames_full), np.nan)  # NaN = tomt/ingen data
+stft_full = np.full((freq_bins, num_frames_full), np.nan)
 
-# Find hvor segmentets frames starter i fuld STFT-tidsindeks
 start_frame_full = seg_start // hop
 num_frames_seg = stft_seg.shape[1]
 
-# Indsæt segment-data i den store matrix
 end_frame_full = min(start_frame_full + num_frames_seg, num_frames_full)
 stft_full[:, start_frame_full:end_frame_full] = stft_seg[:, :end_frame_full-start_frame_full]
 
@@ -65,15 +69,13 @@ plt.plot(t_win, x_win, label="Chosen time segment")
 plt.xlabel("Time [s]")
 plt.ylabel("Amplitude")
 plt.legend()
-plt.title("Chirp signal with gaussian noise")
+plt.title("Chirp signal with modulated Gaussian noise")
 plt.show()
 
+# --- Plot: FFT magnitude for alle vinduer i segmentet ---
 plt.figure()
 
-freqs = np.fft.rfftfreq(win_size, d=1/fs)
-
 for i in range(0, len(x_win) - win_size, hop):
-
     frame = x_win[i:i+win_size]
     frame = frame - np.mean(frame)
     frame = frame * window
@@ -81,20 +83,16 @@ for i in range(0, len(x_win) - win_size, hop):
     X = np.fft.rfft(frame)
     mag = np.abs(X)
 
-    # tidspunktet for vinduet
-    frame_time = t_win[0] + (i + win_size/2)/fs
-
     plt.plot(freqs, mag, alpha=0.3)
 
-plt.xlim(0,500)
+plt.xlim(0, 500)
 plt.xlabel("Frequency [Hz]")
 plt.ylabel("Magnitude")
 plt.title("FFT magnitude for all windows in the chosen segment")
 plt.grid()
-
 plt.show()
 
-# --- Plot: spectrogram med kun segment-data, men x-akse 0..10 ---
+# --- Plot: spectrogram med kun segment-data ---
 plt.figure()
 plt.pcolormesh(times_full, freqs, stft_full, shading="auto")
 plt.ylim(0, 500)
