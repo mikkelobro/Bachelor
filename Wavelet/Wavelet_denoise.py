@@ -4,30 +4,18 @@ import matplotlib.pyplot as plt
 import pywt
 
 # Upload file
-fs, x = wavfile.read("Audio files/No noise/Mikkel_24år.wav")
-
-# Convert to mono
-if x.ndim > 1:
-    x = np.mean(x, axis=1)
-
-# Normalize
+fs_og, x = wavfile.read("Audio files/No noise/Mikkel_24år.wav")
+x = x.astype(float)
 x = x / np.max(np.abs(x))
 
-# Apply noise
-t = np.linspace(0, 1, len(x)) 
-f = 5
-A = 0.5
-noise_level = 0.05
-noise = noise_level * np.random.randn(len(x))  #* (A + 1 + np.sin(f * np.pi * t))
-x_noisy = x + noise
-
-x_out = np.int16(x_noisy / np.max(np.abs(x_noisy)) * 32767)
-wavfile.write("Audio files/With noise/noisy.wav", fs, x_out)
+fs, x_noisy = wavfile.read("Audio files/With noise/noisy_stationary.wav")
+x_noisy = x_noisy.astype(float)
+x_noisy = x_noisy / np.max(np.abs(x_noisy))
 
 # Apply DWT
 wavelet = 'haar'
-level = 4
-d = 2 # Detail space to be removed. used later in code
+level = 5
+d_remove = 2 # Detail space to be removed. used later in code
 coeffs = pywt.wavedec(x_noisy, wavelet, level=level)
 
 # Remove detail coefficients
@@ -129,7 +117,7 @@ for d in coeffs[1:]:
 
 # Removing detail space
 coeffs_mod = coeffs.copy()
-coeffs_mod[-d:] = [np.zeros_like(c) for c in coeffs[-d:]]
+coeffs_mod[-d_remove:] = [np.zeros_like(c) for c in coeffs[-d_remove:]]
 
 # IDWT
 x_visu_hard = pywt.waverec(coeffs_visu_hard, wavelet)
