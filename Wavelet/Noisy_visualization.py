@@ -4,7 +4,7 @@ import pywt
 from scipy.io import wavfile
 
 # Load signal
-fs, x = wavfile.read("Audio files/With noise/noisy.wav")
+fs, x = wavfile.read("Audio files/With noise/noisy_stationary.wav")
 x = x.astype(float)
 
 # DWT
