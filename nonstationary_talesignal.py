@@ -4,7 +4,7 @@ import librosa
 import soundfile as sf
 
 # --- Load audio file ---
-file_path = "Audio files/With noise/noisy.wav"
+file_path = "Audio files/With noise/noisy_nonstationary.wav"
 x, fs = librosa.load(file_path, sr=None, mono=True)
 
 # --- Brug kun de første 10 sekunder hvis ønsket ---
@@ -78,6 +78,22 @@ frame_idx = mag.shape[1] // 2
 
 # --- Frekvensakse ---
 freqs = np.fft.rfftfreq(win_size, d=1/fs)
+
+#------------ plot alle magnitude af alle frekvenser -----
+plt.figure()
+
+for i in range(mag.shape[1]):
+    plt.plot(freqs, 20*np.log10(mag[:, i] + 1e-8), color="blue", alpha=0.05)
+
+for i in range(mag_clean.shape[1]):
+    plt.plot(freqs, 20*np.log10(mag_clean[:, i] + 1e-8), color="orange", alpha=0.05)
+
+plt.xlabel("Frequency [Hz]")
+plt.ylabel("Magnitude [dB]")
+plt.title("All frames magnitude (transparent)")
+plt.xlim(0, 2000)
+plt.grid()
+plt.show()
 
 # --- Plot magnitude før og efter ---
 plt.figure()
