@@ -4,7 +4,7 @@ import librosa
 import soundfile as sf
 
 # --- Load audio file ---
-file_path = "Audio files/With noise/noisy_nonstationary.wav"
+file_path = "Audio files/With noise/Indkøbsvogn.m4a"
 x, fs = librosa.load(file_path, sr=None, mono=True)
 
 # --- Brug kun de første 10 sekunder hvis ønsket ---
