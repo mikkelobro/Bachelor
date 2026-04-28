@@ -72,6 +72,25 @@ print("Filer gemt: threshold_cleaned_output.wav")
 # --- Akser til spectrogram ---
 freqs = np.fft.rfftfreq(win_size, d=1/fs)
 times = np.arange(mag.shape[1]) * hop / fs
+# --- Vælg et frame (fx midten) ---
+frame_idx = mag.shape[1] // 2
+
+# --- Frekvensakse ---
+freqs = np.fft.rfftfreq(win_size, d=1/fs)
+
+# --- Plot magnitude før og efter ---
+plt.figure()
+plt.plot(freqs, 20*np.log10(mag[:, frame_idx] + 1e-8), label="Before thresholding")
+plt.plot(freqs, 20*np.log10(mag_clean[:, frame_idx] + 1e-8), label="After thresholding")
+
+plt.xlabel("Frequency [Hz]")
+plt.ylabel("Magnitude [dB]")
+plt.title("Magnitude spectrum (single frame)")
+plt.legend()
+plt.grid()
+plt.xlim(0, 2000)
+
+plt.show()
 
 # --- Plot 1: tidssignal ---
 plt.figure()
@@ -103,3 +122,4 @@ plt.title("Spectrogram after thresholding")
 plt.colorbar(label="Magnitude [dB]")
 plt.ylim(0, 2000)
 plt.show()
+
