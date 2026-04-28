@@ -65,9 +65,10 @@ x_clean[valid] /= window_sum[valid]
 x_clean = x_clean / np.max(np.abs(x_clean))
 
 # --- Gem lydfiler ---
-sf.write("Audio files/No noise/threshold_cleaned_output.wav", x_clean, fs)
+sf.write("original.wav", x, fs)
+sf.write("threshold_cleaned_output.wav", x_clean, fs)
 
-print("Filer gemt: threshold_cleaned_output.wav")
+print("Filer gemt: original.wav og threshold_cleaned_output.wav")
 
 # --- Akser til spectrogram ---
 freqs = np.fft.rfftfreq(win_size, d=1/fs)
