@@ -8,7 +8,7 @@ fs, x = wavfile.read("Audio files/With noise/noisy_stationary.wav")
 x = x.astype(float)
 
 # DWT
-wavelet = 'haar'
+wavelet = 'db2'
 level = 5
 coeffs = pywt.wavedec(x, wavelet, level=level)
 
