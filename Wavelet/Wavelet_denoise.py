@@ -13,7 +13,7 @@ x_noisy = x_noisy.astype(float)
 x_noisy = x_noisy / np.max(np.abs(x_noisy))
 
 # Apply DWT
-wavelet = 'db2'
+wavelet = 'haar'
 level = 6
 d_remove = 2 # Detail space to be removed. used later in code
 coeffs = pywt.wavedec(x_noisy, wavelet, level=level)
@@ -117,7 +117,20 @@ for d in coeffs[1:]:
 
 # Removing detail space
 coeffs_mod = coeffs.copy()
-coeffs_mod[-d_remove:] = [np.zeros_like(c) for c in coeffs[-d_remove:]]
+
+f_cutoff = 300  # Hz
+
+for j in range(1, level + 1):
+    f_low = fs / (2**(j+1))
+    idx = level - j + 1
+
+    if f_low >= 1000:
+        coeffs_mod[idx] = np.zeros_like(coeffs_mod[idx])
+
+    elif f_low >= 300:
+        d = coeffs_mod[idx]
+        lam = np.median(np.abs(d)) / 0.6745 * np.sqrt(2*np.log(len(d)))
+        coeffs_mod[idx] = np.sign(d) * np.maximum(np.abs(d) - lam, 0)
 
 # IDWT
 x_visu_hard = pywt.waverec(coeffs_visu_hard, wavelet)
