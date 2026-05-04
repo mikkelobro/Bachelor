@@ -4,12 +4,12 @@ import pywt
 from scipy.io import wavfile
 
 # Load signal
-fs, x = wavfile.read("Audio files/With noise/noisy_stationary.wav")
+fs, x = wavfile.read("Audio files/With noise/noisy_nonstationary.wav")
 x = x.astype(float)
 
 # DWT
 wavelet = 'db2'
-level = 5
+level = 6
 coeffs = pywt.wavedec(x, wavelet, level=level)
 
 fig, axs = plt.subplots(level, 2, figsize=(10, 12))

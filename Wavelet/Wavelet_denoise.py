@@ -8,13 +8,13 @@ fs_og, x = wavfile.read("Audio files/No noise/Mikkel_24år.wav")
 x = x.astype(float)
 x = x / np.max(np.abs(x))
 
-fs, x_noisy = wavfile.read("Audio files/With noise/noisy_stationary.wav")
+fs, x_noisy = wavfile.read("Audio files/With noise/noisy_nonstationary.wav")
 x_noisy = x_noisy.astype(float)
 x_noisy = x_noisy / np.max(np.abs(x_noisy))
 
 # Apply DWT
 wavelet = 'db2'
-level = 5
+level = 6
 d_remove = 2 # Detail space to be removed. used later in code
 coeffs = pywt.wavedec(x_noisy, wavelet, level=level)
 
@@ -131,7 +131,7 @@ x_mod = pywt.waverec(coeffs_mod, wavelet)
 
 # Save files
 def save_audio(signal, filename):
-    signal = signal[:len(x)]  # ensure same length
+    #signal = signal[:len(x)]  # ensure same length
     signal = signal / np.max(np.abs(signal))  # normalize
     x_out = np.int16(signal * 32767)
     wavfile.write(filename, fs, x_out)
@@ -146,33 +146,33 @@ save_audio(x_mod, "Audio files/Denoised/remove_detail.wav")
 
 
 # SNR comparison
-def compute_snr(original, noisy):
-    return 10 * np.log10(
-        np.sum(original**2) / np.sum((original - noisy)**2)
-    )
+#def compute_snr(original, noisy):
+#    return 10 * np.log10(
+#        np.sum(original**2) / np.sum((original - noisy)**2)
+#    )
 
-snr_noisy = compute_snr(x, x_noisy)
+#snr_noisy = compute_snr(x, x_noisy)
 
 # VisuShrink
-snr_visu_hard = compute_snr(x, x_visu_hard[:len(x)])
-snr_visu_soft = compute_snr(x, x_visu_soft[:len(x)])
-snr_visu_semi = compute_snr(x, x_visu_semi[:len(x)])
+#snr_visu_hard = compute_snr(x, x_visu_hard[:len(x)])
+#snr_visu_soft = compute_snr(x, x_visu_soft[:len(x)])
+#snr_visu_semi = compute_snr(x, x_visu_semi[:len(x)])
 
 # SURE and BayesShrink
-snr_sure = compute_snr(x, x_sure_soft[:len(x)])
-snr_bayes = compute_snr(x, x_bayes_soft[:len(x)])
+#snr_sure = compute_snr(x, x_sure_soft[:len(x)])
+#snr_bayes = compute_snr(x, x_bayes_soft[:len(x)])
 
-snr_mod = compute_snr(x, x_mod[:len(x)])
+#snr_mod = compute_snr(x, x_mod[:len(x)])
 
-print("SNR comparison (dB):")
-print(f"Noisy:        {snr_noisy:.2f}")
+#print("SNR comparison (dB):")
+#print(f"Noisy:        {snr_noisy:.2f}")
 
-print("\nVisuShrink:")
-print(f"Hard:         {snr_visu_hard:.2f}")
-print(f"Soft:         {snr_visu_soft:.2f}")
-print(f"Semi-soft:    {snr_visu_semi:.2f}")
-print(f"remove detail:    {snr_mod:.2f}")
+#print("\nVisuShrink:")
+#print(f"Hard:         {snr_visu_hard:.2f}")
+#print(f"Soft:         {snr_visu_soft:.2f}")
+#print(f"Semi-soft:    {snr_visu_semi:.2f}")
+#print(f"remove detail:    {snr_mod:.2f}")
 
-print("\nAdaptive (Soft threshold):")
-print(f"SURE:         {snr_sure:.2f}")
-print(f"BayesShrink:  {snr_bayes:.2f}")
+#print("\nAdaptive (Soft threshold):")
+#print(f"SURE:         {snr_sure:.2f}")
+#print(f"BayesShrink:  {snr_bayes:.2f}")
