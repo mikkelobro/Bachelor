@@ -8,7 +8,7 @@ fs_og, x = wavfile.read("Audio files/No noise/Mikkel_24år.wav")
 x = x.astype(float)
 x = x / np.max(np.abs(x))
 
-fs, x_noisy = wavfile.read("Audio files/With noise/noisy_nonstationary.wav")
+fs, x_noisy = wavfile.read("Audio files/With noise/noisy_stationary.wav")
 x_noisy = x_noisy.astype(float)
 x_noisy = x_noisy / np.max(np.abs(x_noisy))
 
@@ -117,20 +117,7 @@ for d in coeffs[1:]:
 
 # Removing detail space
 coeffs_mod = coeffs.copy()
-
-f_cutoff = 300  # Hz
-
-for j in range(1, level + 1):
-    f_low = fs / (2**(j+1))
-    idx = level - j + 1
-
-    if f_low >= 1000:
-        coeffs_mod[idx] = np.zeros_like(coeffs_mod[idx])
-
-    elif f_low >= 300:
-        d = coeffs_mod[idx]
-        lam = np.median(np.abs(d)) / 0.6745 * np.sqrt(2*np.log(len(d)))
-        coeffs_mod[idx] = np.sign(d) * np.maximum(np.abs(d) - lam, 0)
+coeffs_mod[-d_remove:] = [np.zeros_like(c) for c in coeffs[-d_remove:]]
 
 # IDWT
 x_visu_hard = pywt.waverec(coeffs_visu_hard, wavelet)
