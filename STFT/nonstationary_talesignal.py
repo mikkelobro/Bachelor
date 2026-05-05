@@ -65,7 +65,7 @@ x_clean[valid] /= window_sum[valid]
 x_clean = x_clean / np.max(np.abs(x_clean))
 
 # --- Gem lydfiler ---
-sf.write("Audio files/No noise/threshold_cleaned_output.wav", x_clean, fs)
+sf.write("Audio files/Denoised/threshold_cleaned_output.wav", x_clean, fs)
 
 print("Filer gemt: threshold_cleaned_output.wav")
 
