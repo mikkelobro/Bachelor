@@ -66,9 +66,9 @@ x_clean = x_clean / np.max(np.abs(x_clean))
 
 # --- Gem lydfiler ---
 sf.write("original.wav", x, fs)
-sf.write("STFT", x_clean, fs)
+sf.write("threshold_cleaned_output.wav", x_clean, fs)
 
-print("Filer gemt: original.wav og STFT.wav")
+print("Filer gemt: original.wav og threshold_cleaned_output.wav")
 
 # --- Akser til spectrogram ---
 freqs = np.fft.rfftfreq(win_size, d=1/fs)
