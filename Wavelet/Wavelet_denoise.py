@@ -12,6 +12,8 @@ fs, x_noisy = wavfile.read("Audio files/With noise/noisy_stationary.wav")
 x_noisy = x_noisy.astype(float)
 x_noisy = x_noisy / np.max(np.abs(x_noisy))
 
+print(fs_og)
+
 # Apply DWT
 wavelet = 'db2'
 level = 6
