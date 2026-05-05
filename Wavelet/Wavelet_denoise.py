@@ -12,12 +12,10 @@ fs, x_noisy = wavfile.read("Audio files/With noise/noisy_stationary.wav")
 x_noisy = x_noisy.astype(float)
 x_noisy = x_noisy / np.max(np.abs(x_noisy))
 
-print(fs_og)
-
 # Apply DWT
 wavelet = 'db2'
 level = 6
-d_remove = 4 # Detail space to be removed. used later in code
+d_remove = 3 # Detail space to be removed. used later in code
 coeffs = pywt.wavedec(x_noisy, wavelet, level=level)
 
 # Remove detail coefficients

@@ -10,7 +10,7 @@ from scipy.signal import resample
 fs = 2000
 t = np.arange(0, 1, 1/fs)
 
-x = np.sin(2*np.pi*100*t) + np.sin(2*np.pi*300*t)
+x = np.sin(2*np.pi*100*t) + np.sin(2*np.pi*400*t)
 
 # Apply noise
 noise_level = 1
