@@ -4,7 +4,7 @@ import librosa
 import soundfile as sf
 
 # --- Load audio file ---
-file_path = "Audio files/With noise/noisy_nonstationary.wav"
+file_path = "Audio files/With noise/noisy_stationary.wav"
 x, fs = librosa.load(file_path, sr=None, mono=True)
 
 # --- Brug kun de første 10 sekunder hvis ønsket ---
@@ -66,9 +66,9 @@ x_clean = x_clean / np.max(np.abs(x_clean))
 
 # --- Gem lydfiler ---
 sf.write("original.wav", x, fs)
-sf.write("threshold_cleaned_output.wav", x_clean, fs)
+sf.write("STFT", x_clean, fs)
 
-print("Filer gemt: original.wav og threshold_cleaned_output.wav")
+print("Filer gemt: original.wav og STFT.wav")
 
 # --- Akser til spectrogram ---
 freqs = np.fft.rfftfreq(win_size, d=1/fs)
