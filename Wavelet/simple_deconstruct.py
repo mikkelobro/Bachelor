@@ -22,7 +22,7 @@ wavelet = 'haar'
 level = 6
 
 # Removing detail space
-d_remove = 1    # Detail space to be removed
+d_remove = 1     # Detail space to be removed
 
 # ---------------------------
 # Save audio helper
