@@ -106,12 +106,12 @@ for d in coeffs[1:]:
     coeffs_visu_semi.append(d_thresh_semi)
 
     # Soft with SURE
-    lam_sure = sure_threshold(d, sigma)
+    lam_sure = sure_threshold(d, sigma_j)
     d_thresh_sure = np.sign(d) * np.maximum(np.abs(d) - lam_sure, 0)
     coeffs_sure_soft.append(d_thresh_sure)
 
     # Soft with BayesShrink
-    lam_bayes = bayes_threshold(d, sigma)
+    lam_bayes = bayes_threshold(d, sigma_j)
     d_thresh_bayes = np.sign(d) * np.maximum(np.abs(d) - lam_bayes, 0)
     coeffs_bayes_soft.append(d_thresh_bayes)
 

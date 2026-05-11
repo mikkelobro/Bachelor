@@ -13,8 +13,7 @@ t = np.arange(0, 1, 1/fs)
 x = np.sin(2*np.pi*100*t) + np.sin(2*np.pi*400*t)
 
 # Apply noise
-noise_level = 1
-noise_stat = noise_level * np.random.randn(len(x))
+noise_stat = np.random.randn(len(x))
 x_noisy = x + noise_stat
 
 # Decomposition
