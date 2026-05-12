@@ -15,7 +15,7 @@ x = x / np.max(np.abs(x))
 t = np.linspace(0, 1, len(x)) 
 f = 5
 A = 0.5
-noise_level = 0.1
+noise_level = 0.05
 noise_stat = noise_level * np.random.randn(len(x))
 x_noisy_stat = x + noise_stat
 
