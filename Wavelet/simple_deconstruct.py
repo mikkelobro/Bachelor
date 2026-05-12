@@ -25,6 +25,13 @@ level = 6
 d_remove = 1     # Detail space to be removed
 
 # ---------------------------
+# NeighBlock parameters
+# ---------------------------
+use_neighblock = True
+block_size = 8
+energy_threshold = 0.05
+
+# ---------------------------
 # Save audio helper
 # ---------------------------
 def save_audio(signal, filename):
@@ -104,9 +111,51 @@ decompose_and_plot(x, coeffs, "(original)", "wavelet/wavelet_decomposition.pdf")
 
 # Modified
 coeffs_mod = coeffs.copy()
-coeffs_mod[-d_remove:] = [np.zeros_like(c) for c in coeffs[-d_remove:]]
+
+# -------------------------------------------------
+# Option 1: Remove entire detail spaces
+# -------------------------------------------------
+if not use_neighblock:
+    coeffs_mod[-d_remove:] = [np.zeros_like(c)
+                              for c in coeffs[-d_remove:]]
+
+# -------------------------------------------------
+# Option 2: NeighBlock denoising
+# -------------------------------------------------
+else:
+
+    # Loop over detail coefficients only
+    for level_idx in range(1, len(coeffs_mod)):
+
+        detail = coeffs_mod[level_idx].copy()
+
+        # Process coefficients in local blocks
+        for start in range(0, len(detail), block_size):
+
+            end = min(start + block_size, len(detail))
+
+            block = detail[start:end]
+
+            # Compute local block energy
+            energy = np.sum(block**2)
+
+            # Remove weak noisy blocks
+            if energy < energy_threshold:
+                detail[start:end] = 0
+
+        coeffs_mod[level_idx] = detail
+
+# Reconstruction
 x_mod = pywt.waverec(coeffs_mod, wavelet)[:len(x)]
+
 x_mod_audio = resample(x_mod, int(len(x_mod) * fs_audio / fs))
+
+# Print denoising mode
+if use_neighblock:
+    print("Using NeighBlock-style local denoising")
+else:
+    print(f"Removing D1 to D{d_remove}")
+
 save_audio(x_mod_audio, "wavelet/modified.wav")
 decompose_and_plot(x, coeffs_mod, "(modified)", "wavelet/wavelet_decomposition_modified.pdf")
 
