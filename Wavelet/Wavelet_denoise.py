@@ -15,7 +15,7 @@ x_noisy = x_noisy / np.max(np.abs(x_noisy))
 # Apply DWT
 wavelet = 'db2'
 level = 6
-d_remove = 4 # Detail space to be removed. used later in code
+d_remove = 3 # Detail space to be removed. used later in code
 coeffs = pywt.wavedec(x_noisy, wavelet, level=level)
 
 # Remove detail coefficients
@@ -106,12 +106,12 @@ for d in coeffs[1:]:
     coeffs_visu_semi.append(d_thresh_semi)
 
     # Soft with SURE
-    lam_sure = sure_threshold(d, sigma)
+    lam_sure = sure_threshold(d, sigma_j)
     d_thresh_sure = np.sign(d) * np.maximum(np.abs(d) - lam_sure, 0)
     coeffs_sure_soft.append(d_thresh_sure)
 
     # Soft with BayesShrink
-    lam_bayes = bayes_threshold(d, sigma)
+    lam_bayes = bayes_threshold(d, sigma_j)
     d_thresh_bayes = np.sign(d) * np.maximum(np.abs(d) - lam_bayes, 0)
     coeffs_bayes_soft.append(d_thresh_bayes)
 
@@ -120,19 +120,21 @@ coeffs_mod = coeffs.copy()
 coeffs_mod[-d_remove:] = [np.zeros_like(c) for c in coeffs[-d_remove:]]
 
 # IDWT
-x_visu_hard = pywt.waverec(coeffs_visu_hard, wavelet)
-x_visu_soft = pywt.waverec(coeffs_visu_soft, wavelet)
-x_visu_semi = pywt.waverec(coeffs_visu_semi, wavelet)
+x_visu_hard = pywt.waverec(coeffs_visu_hard, wavelet)[:len(x)]
+x_visu_soft = pywt.waverec(coeffs_visu_soft, wavelet)[:len(x)]
+x_visu_semi = pywt.waverec(coeffs_visu_semi, wavelet)[:len(x)]
 
-x_sure_soft = pywt.waverec(coeffs_sure_soft, wavelet)
-x_bayes_soft = pywt.waverec(coeffs_bayes_soft, wavelet)
+x_sure_soft = pywt.waverec(coeffs_sure_soft, wavelet)[:len(x)]
+x_bayes_soft = pywt.waverec(coeffs_bayes_soft, wavelet)[:len(x)]
 
-x_mod = pywt.waverec(coeffs_mod, wavelet)
+x_mod = pywt.waverec(coeffs_mod, wavelet)[:len(x)]
 
 # Save files
 def save_audio(signal, filename):
-    #signal = signal[:len(x)]  # ensure same length
-    signal = signal / np.max(np.abs(signal))  # normalize
+    max_val = np.max(np.abs(signal))
+
+    if max_val > 0:
+        signal = signal / max_val  # normalize
     x_out = np.int16(signal * 32767)
     wavfile.write(filename, fs, x_out)
 
@@ -142,6 +144,7 @@ save_audio(x_visu_semi, "Audio files/Denoised/visu_semi.wav")
 
 save_audio(x_sure_soft, "Audio files/Denoised/sure_soft.wav")
 save_audio(x_bayes_soft, "Audio files/Denoised/bayes_soft.wav")
+
 save_audio(x_mod, "Audio files/Denoised/remove_detail.wav")
 
 
