@@ -32,7 +32,7 @@ def save_audio(signal, filename):
     signal_int16 = np.int16(signal * 32767)
     wavfile.write(filename, fs_audio, signal_int16)
 
-os.makedirs("wavelet", exist_ok=True)
+os.makedirs("wavelet/Simple signal/Audio", exist_ok=True)
 
 # ---------------------------
 # Resample for audio playback
@@ -43,8 +43,8 @@ x_audio = resample(x, int(len(x) * fs_audio / fs))
 x_noisy_audio = resample(x_noisy, int(len(x_noisy) * fs_audio / fs))
 
 # Save original and noisy signals (audio)
-save_audio(x_audio, "wavelet/original.wav")
-save_audio(x_noisy_audio, "wavelet/noisy.wav")
+save_audio(x_audio, "wavelet/Simple signal/Audio/original.wav")
+save_audio(x_noisy_audio, "wavelet/Simple signal/Audio/noisy.wav")
 
 # Zoom window (adjust as needed)
 t_min = 0
@@ -100,7 +100,7 @@ def decompose_and_plot(signal, coeffs_input, title_suffix, filename):
 
 # Original
 coeffs = pywt.wavedec(x, wavelet, level=level)
-decompose_and_plot(x, coeffs, "(original)", "wavelet/wavelet_decomposition.pdf")
+decompose_and_plot(x, coeffs, "(original)", "wavelet/Simple signal/Plots/wavelet_decomposition.pdf")
 
 
 # Make a copy of the coefficients
@@ -114,9 +114,9 @@ x_mod = pywt.waverec(coeffs_mod, wavelet)
 x_mod_audio = resample(x_mod, int(len(x_mod) * fs_audio / fs))
 
 print(f"Removing D1 to D{d_remove}")
-save_audio(x_mod_audio, "wavelet/modified.wav")
-decompose_and_plot(x, coeffs_mod, "(modified)", "wavelet/wavelet_decomposition_modified.pdf")
+save_audio(x_mod_audio, "wavelet/Simple signal/Audio/modified.wav")
+decompose_and_plot(x, coeffs_mod, "(modified)", "wavelet/Simple signal/Plots/wavelet_decomposition_modified.pdf")
 
 # Noisy
 coeffs_noisy = pywt.wavedec(x_noisy, wavelet, level=level)
-decompose_and_plot(x_noisy, coeffs_noisy, "(noisy)", "wavelet/wavelet_decomposition_noisy.pdf")
+decompose_and_plot(x_noisy, coeffs_noisy, "(noisy)", "wavelet/Simple signal/Plots/wavelet_decomposition_noisy.pdf")
