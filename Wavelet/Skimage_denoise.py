@@ -7,7 +7,7 @@ from skimage.restoration import estimate_sigma
 # -------------------------------------------------
 # Load WAV file
 # -------------------------------------------------
-input_file = "Audio files/With noise/noisy_nonstationary.wav"
+input_file = "Audio files/With noise/noisy_stationary.wav"
 
 signal, samplerate = sf.read(input_file)
 
@@ -20,7 +20,7 @@ if signal.ndim > 1:
 # -------------------------------------------------
 # Parameters
 # -------------------------------------------------
-wavelet = 'db10'
+wavelet = 'db4'
 levels = 6
 
 # Choose which detail levels to remove completely
