@@ -7,19 +7,19 @@ from scipy.signal import resample
 
 # Generate signal
 
-fs = 2000
+fs = 2048
 t = np.arange(0, 1, 1/fs)
 
-x = np.sin(2*np.pi*100*t) + np.sin(2*np.pi*400*t)
+x = 1.0*np.sin(2*np.pi*64*t) + 0.5*np.sin(2*np.pi*128*t)
 
 # Apply noise
-noise_stat = np.random.randn(len(x))
+noise_stat = 0.2 *np.random.randn(len(x))
 x_noisy = x + noise_stat
 
 # Decomposition
 
 wavelet = 'haar'
-level = 6
+level = 5
 
 # Remove finest detail space
 d_remove = 1     # Removes D1 (finest detail space)
@@ -48,7 +48,7 @@ save_audio(x_noisy_audio, "wavelet/Simple signal/Audio/noisy.wav")
 
 # Zoom window (adjust as needed)
 t_min = 0
-t_max = 0.1
+t_max = 0.25
 mask = (t >= t_min) & (t <= t_max)
 
 # ---------------------------
@@ -75,16 +75,33 @@ def decompose_and_plot(signal, coeffs_input, title_suffix, filename):
                 coeffs_V.append(np.zeros_like(coeffs_input[i]))
         V_local[j] = pywt.waverec(coeffs_V, wavelet)[:len(signal)]
 
+    # Global y-axis scaling for visual comparison
+    y_lim = np.max(np.abs(signal)) * 1.1
+
     # Plot
-    fig, axs = plt.subplots(level+1, 2, figsize=(12, 16))
+    fig, axs = plt.subplots(level+1, 2, figsize=(14, 16))
 
     for j in range(0, level+1):
+
+        # Approximation frequency band
+        if j == 0:
+            approx_label = f"V{j}\n[0-{fs/2:.0f} Hz]"
+        else:
+            approx_high = fs / (2**(j+1))
+            approx_label = f"V{j}\n[0-{approx_high:.0f} Hz]"
+
         axs[j, 0].plot(t[mask], V_local[j][mask])
-        axs[j, 0].set_ylabel(f"V{j}")
+        axs[j, 0].set_ylabel(approx_label)
+        axs[j, 0].set_ylim(-y_lim, y_lim)
 
         if j > 0:
+            # Detail frequency band
+            f_low = fs / (2**(j+1))
+            f_high = fs / (2**j)
+
             axs[j, 1].plot(t[mask], D_local[j][mask])
-            axs[j, 1].set_ylabel(f"D{j}")
+            axs[j, 1].set_ylabel(f"D{j}\n[{f_low:.0f}-{f_high:.0f} Hz]")
+            axs[j, 1].set_ylim(-y_lim, y_lim)
         else:
             axs[j, 1].axis('off')
 
