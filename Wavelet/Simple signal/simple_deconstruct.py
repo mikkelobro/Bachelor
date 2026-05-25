@@ -5,6 +5,14 @@ from scipy.io import wavfile
 import os
 from scipy.signal import resample
 
+# ---------------------------
+# SNR helper
+# ---------------------------
+def compute_snr(reference, estimate):
+    signal_power = np.sum(reference**2)
+    noise_power = np.sum((reference - estimate)**2)
+    return 10 * np.log10(signal_power / noise_power)
+
 # Generate signal
 
 fs = 2048
@@ -18,7 +26,7 @@ x_noisy = x + noise_stat
 
 # Decomposition
 
-wavelet = 'Haar'
+wavelet = 'haar'
 level = 5
 
 # Remove finest detail space
@@ -130,7 +138,16 @@ x_mod = pywt.waverec(coeffs_mod, wavelet)
 
 x_mod_audio = resample(x_mod, int(len(x_mod) * fs_audio / fs))
 
+# ---------------------------
+# Compute SNR values
+# ---------------------------
+snr_noisy = compute_snr(x, x_noisy)
+snr_denoised = compute_snr(x, x_mod)
+
 print(f"Removing D1 to D{d_remove}")
+print(f"SNR of noisy signal: {snr_noisy:.2f} dB")
+print(f"SNR of denoised signal: {snr_denoised:.2f} dB")
+
 save_audio(x_mod_audio, "wavelet/Simple signal/Audio/modified.wav")
 decompose_and_plot(x, coeffs_mod, "(modified)", "wavelet/Simple signal/Plots/wavelet_decomposition_modified.pdf")
 
