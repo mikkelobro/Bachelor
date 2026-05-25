@@ -18,7 +18,7 @@ x_noisy = x + noise_stat
 
 # Decomposition
 
-wavelet = 'haar'
+wavelet = 'Haar'
 level = 5
 
 # Remove finest detail space
@@ -48,7 +48,7 @@ save_audio(x_noisy_audio, "wavelet/Simple signal/Audio/noisy.wav")
 
 # Zoom window (adjust as needed)
 t_min = 0
-t_max = 0.25
+t_max = 0.1
 mask = (t >= t_min) & (t <= t_max)
 
 # ---------------------------
@@ -85,10 +85,10 @@ def decompose_and_plot(signal, coeffs_input, title_suffix, filename):
 
         # Approximation frequency band
         if j == 0:
-            approx_label = f"V{j}\n[0-{fs/2:.0f} Hz]"
+            approx_label = f"A{j}\n[0-{fs/2:.0f} Hz]"
         else:
             approx_high = fs / (2**(j+1))
-            approx_label = f"V{j}\n[0-{approx_high:.0f} Hz]"
+            approx_label = f"A{j}\n[0-{approx_high:.0f} Hz]"
 
         axs[j, 0].plot(t[mask], V_local[j][mask])
         axs[j, 0].set_ylabel(approx_label)
