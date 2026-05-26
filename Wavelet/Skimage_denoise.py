@@ -7,7 +7,7 @@ from skimage.restoration import estimate_sigma
 # -------------------------------------------------
 # Load WAV file
 # -------------------------------------------------
-input_file = "Audio files/With noise/noisy_nonstationary.wav"
+input_file = "Audio files/With noise/noisy_bandpass_nonstationary.wav"
 
 signal, samplerate = sf.read(input_file)
 
