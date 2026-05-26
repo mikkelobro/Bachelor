@@ -26,7 +26,7 @@ x_noisy = x + noise_stat
 
 # Decomposition
 
-wavelet = 'haar'
+wavelet = 'db10'
 level = 5
 
 # Remove finest detail space
