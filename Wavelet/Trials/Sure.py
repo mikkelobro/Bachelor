@@ -1,76 +1,88 @@
 import numpy as np
-import pywt
 from scipy.io import wavfile
+import pywt
 
-# --- Load audio ---
-fs, x = wavfile.read("Audio files/No noise/Mikkel_24år.wav")
+def sure_threshold(detail_coeffs, sigma):
+    # Squared coefficient magnitudes
+    coeffs_sq = np.sort(np.abs(detail_coeffs) ** 2)
 
-# Convert to mono
-if x.ndim > 1:
-    x = np.mean(x, axis=1)
+    # Number of coefficients
+    n = len(coeffs_sq)
+
+    # Cumulative sum
+    cumulative_sum = np.cumsum(coeffs_sq)
+
+    # Candidate SURE risks
+    sure_risks = np.zeros(n)
+
+    for k in range(n):
+        sure_risks[k] = (
+            n * (sigma ** 2)
+            + cumulative_sum[k]
+            + (n - k - 1) * coeffs_sq[k]
+            - 2 * (sigma ** 2) * (k + 1)
+        )
+
+    # Index of minimum risk
+    min_index = np.argmin(sure_risks)
+
+    # Optimal threshold
+    threshold = np.sqrt(coeffs_sq[min_index])
+
+    return threshold
+
+
+def soft_threshold(detail_coeffs, threshold):
+    return np.sign(detail_coeffs) * np.maximum(np.abs(detail_coeffs) - threshold, 0)
+
+# Load WAV file
+sample_rate, audio = wavfile.read("input.wav")
+
+# Convert to float
+audio = audio.astype(np.float32)
 
 # Normalize
-x = x / np.max(np.abs(x))
+if np.max(np.abs(audio)) > 1:
+    audio = audio / np.max(np.abs(audio))
 
-# --- Add noise (optional) ---
-noise_level = 0.05
-noise = noise_level * np.random.randn(len(x))
-x_noisy = x + noise
+# Convert stereo to mono
+if len(audio.shape) > 1:
+    audio = np.mean(audio, axis=1)
 
-# --- Haar DWT ---
-wavelet = 'haar'
-level = 5
-coeffs = pywt.wavedec(x_noisy, wavelet, level=level)
+# Wavelet settings
+wavelet = "db4"
+levels = 6
 
-# --- Noise estimate (from finest scale) ---
-d1 = coeffs[-1]
-sigma = np.median(np.abs(d1)) / 0.6745
-sigma2 = sigma**2
+# Perform DWT decomposition
+coeffs = pywt.wavedec(audio, wavelet=wavelet, level=levels)
 
-# --- SURE threshold function ---
-def sure_threshold(d, sigma):
-    d2 = d**2
-    n = len(d)
+# Split approximation and detail coefficients
+approximation = coeffs[0]
+details = coeffs[1:]
 
-    # Sort squared coefficients
-    sorted_d2 = np.sort(d2)
-    
-    risks = []
-    lambdas = np.sqrt(sorted_d2)
+# Estimate noise standard deviation from finest detail level
+sigma = np.median(np.abs(details[-1])) / 0.6745
 
-    for lam in lambdas:
-        term1 = n * sigma2
-        term2 = np.sum(np.minimum(d2, lam**2))
-        term3 = 2 * sigma2 * np.sum(np.abs(d) <= lam)
-        
-        risk = term1 + term2 - term3
-        risks.append(risk)
+# Thresholded detail coefficients
+thresholded_details = []
 
-    # Choose lambda minimizing SURE
-    lam_opt = lambdas[np.argmin(risks)]
-    return lam_opt
+# Apply SURE thresholding to each detail level
+for detail in details:
+    threshold = sure_threshold(detail, sigma)
+    thresholded_detail = soft_threshold(detail, threshold)
+    thresholded_details.append(thresholded_detail)
 
-# --- Apply SURE thresholding ---
-coeffs_thresh = [coeffs[0]]  # keep approximation
+# Reconstruct coefficient list
+thresholded_coeffs = [approximation] + thresholded_details
 
-for d in coeffs[1:]:
-    lam = sure_threshold(d, sigma)
-    
-    # Soft thresholding (standard for SURE)
-    d_thresh = pywt.threshold(d, lam, mode='soft')
-    
-    coeffs_thresh.append(d_thresh)
+# Perform inverse DWT reconstruction
+denoised_audio = pywt.waverec(thresholded_coeffs, wavelet=wavelet)
 
-# --- Reconstruction ---
-x_denoised = pywt.waverec(coeffs_thresh, wavelet)
+# Ensure reconstructed signal length matches original
+denoised_audio = denoised_audio[:len(audio)]
 
-# --- Save output ---
-x_out = np.int16(x_denoised / np.max(np.abs(x_denoised)) * 32767)
-wavfile.write("Audio files/Denoised/denoised_sure.wav", fs, x_out)
+# Convert back to 16-bit PCM
+denoised_audio = np.int16(denoised_audio / np.max(np.abs(denoised_audio)) * 32767)
 
-# --- SNR comparison ---
-snr_noisy = 10 * np.log10(np.sum(x**2) / np.sum((x - x_noisy)**2))
-snr_denoised = 10 * np.log10(np.sum(x**2) / np.sum((x - x_denoised[:len(x)])**2))
-
-print("SNR (noisy):", snr_noisy, "dB")
-print("SNR (denoised):", snr_denoised, "dB")
+# Save denoised WAV file
+wavfile.write("denoised_output.wav", sample_rate, denoised_audio)
