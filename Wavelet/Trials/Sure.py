@@ -36,7 +36,7 @@ def soft_threshold(detail_coeffs, threshold):
     return np.sign(detail_coeffs) * np.maximum(np.abs(detail_coeffs) - threshold, 0)
 
 # Load WAV file
-sample_rate, audio = wavfile.read("input.wav")
+sample_rate, audio = wavfile.read("Audio files/With noise/noisy_bandpass_nonstationary.wav")
 
 # Convert to float
 audio = audio.astype(np.float32)
@@ -85,4 +85,4 @@ denoised_audio = denoised_audio[:len(audio)]
 denoised_audio = np.int16(denoised_audio / np.max(np.abs(denoised_audio)) * 32767)
 
 # Save denoised WAV file
-wavfile.write("denoised_output.wav", sample_rate, denoised_audio)
+wavfile.write("Audio files/Denoised/sure_soft.wav", sample_rate, denoised_audio)
