@@ -15,7 +15,7 @@ def soft_threshold(coeffs, threshold):
     return np.sign(coeffs) * np.maximum(np.abs(coeffs) - threshold, 0)
 
 
-def neighblock(detail_coeffs, sigma, block_size=8, overlap=4):
+def neighblock(detail_coeffs, sigma, block_size=16, overlap=4):
     """
     NeighBlock thresholding for 1D wavelet detail coefficients.
 
@@ -108,7 +108,7 @@ for i, detail in enumerate(details):
         detail,
         sigma,
         block_size=8,
-        overlap=4
+        overlap= 4
     )
 
     detail_level = levels - i
