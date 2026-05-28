@@ -5,21 +5,29 @@ from scipy.io import wavfile
 import os
 from scipy.signal import resample
 
+# ---------------------------
+# SNR helper
+# ---------------------------
+def compute_snr(reference, estimate):
+    signal_power = np.sum(reference**2)
+    noise_power = np.sum((reference - estimate)**2)
+    return 10 * np.log10(signal_power / noise_power)
+
 # Generate signal
 
-fs = 2000
+fs = 2048
 t = np.arange(0, 1, 1/fs)
 
-x = np.sin(2*np.pi*100*t) + np.sin(2*np.pi*400*t)
+x = 1.0*np.sin(2*np.pi*64*t) + 0.5*np.sin(2*np.pi*128*t)
 
 # Apply noise
-noise_stat = np.random.randn(len(x))
+noise_stat = 0.2 *np.random.randn(len(x))
 x_noisy = x + noise_stat
 
 # Decomposition
 
-wavelet = 'haar'
-level = 6
+wavelet = 'db6'
+level = 5
 
 # Remove finest detail space
 d_remove = 1     # Removes D1 (finest detail space)
@@ -75,16 +83,33 @@ def decompose_and_plot(signal, coeffs_input, title_suffix, filename):
                 coeffs_V.append(np.zeros_like(coeffs_input[i]))
         V_local[j] = pywt.waverec(coeffs_V, wavelet)[:len(signal)]
 
+    # Global y-axis scaling for visual comparison
+    y_lim = np.max(np.abs(signal)) * 1.1
+
     # Plot
-    fig, axs = plt.subplots(level+1, 2, figsize=(12, 16))
+    fig, axs = plt.subplots(level+1, 2, figsize=(14, 16))
 
     for j in range(0, level+1):
+
+        # Approximation frequency band
+        if j == 0:
+            approx_label = f"A{j}\n[0-{fs/2:.0f} Hz]"
+        else:
+            approx_high = fs / (2**(j+1))
+            approx_label = f"A{j}\n[0-{approx_high:.0f} Hz]"
+
         axs[j, 0].plot(t[mask], V_local[j][mask])
-        axs[j, 0].set_ylabel(f"V{j}")
+        axs[j, 0].set_ylabel(approx_label)
+        axs[j, 0].set_ylim(-y_lim, y_lim)
 
         if j > 0:
+            # Detail frequency band
+            f_low = fs / (2**(j+1))
+            f_high = fs / (2**j)
+
             axs[j, 1].plot(t[mask], D_local[j][mask])
-            axs[j, 1].set_ylabel(f"D{j}")
+            axs[j, 1].set_ylabel(f"D{j}\n[{f_low:.0f}-{f_high:.0f} Hz]")
+            axs[j, 1].set_ylim(-y_lim, y_lim)
         else:
             axs[j, 1].axis('off')
 
@@ -113,7 +138,16 @@ x_mod = pywt.waverec(coeffs_mod, wavelet)
 
 x_mod_audio = resample(x_mod, int(len(x_mod) * fs_audio / fs))
 
+# ---------------------------
+# Compute SNR values
+# ---------------------------
+snr_noisy = compute_snr(x, x_noisy)
+snr_denoised = compute_snr(x, x_mod)
+
 print(f"Removing D1 to D{d_remove}")
+print(f"SNR of noisy signal: {snr_noisy:.2f} dB")
+print(f"SNR of denoised signal: {snr_denoised:.2f} dB")
+
 save_audio(x_mod_audio, "wavelet/Simple signal/Audio/modified.wav")
 decompose_and_plot(x, coeffs_mod, "(modified)", "wavelet/Simple signal/Plots/wavelet_decomposition_modified.pdf")
 

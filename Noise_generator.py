@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.signal import butter, lfilter
 from scipy.io import wavfile
 
 # Upload file
@@ -15,12 +16,26 @@ x = x / np.max(np.abs(x))
 t = np.linspace(0, 1, len(x)) 
 f = 5
 A = 0.5
-noise_level = 0.05
-noise_stat = noise_level * np.random.randn(len(x))
+white_noise = np.random.randn(len(x))
+env = A + 1 + np.sin(f * np.pi * t)
+noise_level = 0.025
+noise_stat = noise_level * white_noise
 x_noisy_stat = x + noise_stat
 
-noise_nonstat = noise_level * np.random.randn(len(x))  * (A + 1 + np.sin(f * np.pi * t))
+noise_nonstat = noise_level * white_noise  * env
 x_noisy_nonstat = x + noise_nonstat
+
+# Create bandpass filter
+lowcut = 0.05
+highcut = 0.4
+
+b, a = butter(4, [lowcut, highcut], btype='band')
+
+# Apply bandpass filter
+bandpass_noise = lfilter(b, a, white_noise)
+
+noise_bandpass_nonstat = noise_level * env * bandpass_noise
+x_noisy_bandpass_nonstat = x + noise_bandpass_nonstat
 
 # Length of noise-only files in seconds
 duration = 20
@@ -45,3 +60,6 @@ wavfile.write("Audio files/With noise/noisy_stationary.wav", fs, x_out_stat)
 
 x_out_nonstat = np.int16(x_noisy_nonstat / np.max(np.abs(x_noisy_nonstat)) * 32767)
 wavfile.write("Audio files/With noise/noisy_nonstationary.wav", fs, x_out_nonstat)
+
+x_out_bandpass_nonstat = np.int16(x_noisy_bandpass_nonstat / np.max(np.abs(x_noisy_bandpass_nonstat)) * 32767)
+wavfile.write("Audio files/With noise/noisy_bandpass_nonstationary.wav", fs, x_out_bandpass_nonstat)

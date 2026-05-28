@@ -1,76 +1,100 @@
 import numpy as np
-import pywt
 from scipy.io import wavfile
+import pywt
 
-# --- Load audio ---
-fs, x = wavfile.read("Audio files/No noise/Mikkel_24år.wav")
+def sure_threshold(detail_coeffs, sigma):
+    # Normalize coefficients by noise standard deviation
+    normalized_coeffs = detail_coeffs / sigma
 
-# Convert to mono
-if x.ndim > 1:
-    x = np.mean(x, axis=1)
+    # Squared normalized coefficient magnitudes
+    coeffs_sq = np.sort(np.abs(normalized_coeffs) ** 2)
 
-# Normalize
-x = x / np.max(np.abs(x))
+    # Number of coefficients
+    n = len(coeffs_sq)
 
-# --- Add noise (optional) ---
-noise_level = 0.05
-noise = noise_level * np.random.randn(len(x))
-x_noisy = x + noise
+    # Cumulative sum
+    cumulative_sum = np.cumsum(coeffs_sq)
 
-# --- Haar DWT ---
-wavelet = 'haar'
-level = 5
-coeffs = pywt.wavedec(x_noisy, wavelet, level=level)
+    # Candidate SURE risks (normalized domain)
+    sure_risks = np.zeros(n)
 
-# --- Noise estimate (from finest scale) ---
-d1 = coeffs[-1]
-sigma = np.median(np.abs(d1)) / 0.6745
-sigma2 = sigma**2
+    for k in range(n):
+        sure_risks[k] = (
+            n
+            - 2 * (k + 1)
+            + cumulative_sum[k]
+            + (n - k - 1) * coeffs_sq[k]
+        )
 
-# --- SURE threshold function ---
-def sure_threshold(d, sigma):
-    d2 = d**2
-    n = len(d)
+    # Index of minimum risk
+    min_index = np.argmin(sure_risks)
 
-    # Sort squared coefficients
-    sorted_d2 = np.sort(d2)
-    
-    risks = []
-    lambdas = np.sqrt(sorted_d2)
+    # Convert threshold back to original scale
+    threshold = sigma * np.sqrt(coeffs_sq[min_index])
+    return threshold
 
-    for lam in lambdas:
-        term1 = n * sigma2
-        term2 = np.sum(np.minimum(d2, lam**2))
-        term3 = 2 * sigma2 * np.sum(np.abs(d) <= lam)
-        
-        risk = term1 + term2 - term3
-        risks.append(risk)
 
-    # Choose lambda minimizing SURE
-    lam_opt = lambdas[np.argmin(risks)]
-    return lam_opt
+def soft_threshold(detail_coeffs, threshold):
+    return np.sign(detail_coeffs) * np.maximum(np.abs(detail_coeffs) - threshold, 0)
 
-# --- Apply SURE thresholding ---
-coeffs_thresh = [coeffs[0]]  # keep approximation
+# Load WAV file
+sample_rate, audio = wavfile.read("Audio files/With noise/noisy_stationary.wav")
 
-for d in coeffs[1:]:
-    lam = sure_threshold(d, sigma)
-    
-    # Soft thresholding (standard for SURE)
-    d_thresh = pywt.threshold(d, lam, mode='soft')
-    
-    coeffs_thresh.append(d_thresh)
+# Wavelet settings
+wavelet = "db4"
+levels = 6
 
-# --- Reconstruction ---
-x_denoised = pywt.waverec(coeffs_thresh, wavelet)
+# Number of coarsest detail levels to exclude from thresholding
+# 0 means threshold all detail levels
+exclude_coarse_levels = 0
 
-# --- Save output ---
-x_out = np.int16(x_denoised / np.max(np.abs(x_denoised)) * 32767)
-wavfile.write("Audio files/Denoised/denoised_sure.wav", fs, x_out)
+# Perform DWT decomposition
+coeffs = pywt.wavedec(audio, wavelet=wavelet, level=levels)
 
-# --- SNR comparison ---
-snr_noisy = 10 * np.log10(np.sum(x**2) / np.sum((x - x_noisy)**2))
-snr_denoised = 10 * np.log10(np.sum(x**2) / np.sum((x - x_denoised[:len(x)])**2))
+# Split approximation and detail coefficients
+approximation = coeffs[0]
+details = coeffs[1:]
 
-print("SNR (noisy):", snr_noisy, "dB")
-print("SNR (denoised):", snr_denoised, "dB")
+thresholded_details = []
+
+# Detail levels excluded from thresholding
+# details[0] corresponds to the coarsest detail level
+excluded_details = details[:exclude_coarse_levels]
+
+# Detail levels to threshold
+processed_details = details[exclude_coarse_levels:]
+
+# Apply SURE thresholding to each detail level
+for detail in processed_details:
+
+    # Estimate noise level for current detail level
+    sigma = np.median(np.abs(detail)) / 0.6745
+
+    # SURE threshold
+    sure_thresh = sure_threshold(detail, sigma)
+
+    # Universal threshold upper bound (classical SureShrink)
+    universal_thresh = sigma * np.sqrt(2 * np.log(len(detail)))
+
+    # Classical SureShrink threshold
+    threshold = min(sure_thresh, universal_thresh)
+
+    # Apply soft thresholding
+    thresholded_detail = soft_threshold(detail, threshold)
+
+    thresholded_details.append(thresholded_detail)
+
+# Reconstruct coefficient list
+thresholded_coeffs = [approximation] + excluded_details + thresholded_details
+
+# Perform inverse DWT reconstruction
+denoised_audio = pywt.waverec(thresholded_coeffs, wavelet=wavelet)
+
+# Ensure reconstructed signal length matches original
+denoised_audio = denoised_audio[:len(audio)]
+
+# Convert back to 16-bit PCM
+denoised_audio = np.int16(denoised_audio / np.max(np.abs(denoised_audio)) * 32767)
+
+# Save denoised WAV file
+wavfile.write("Audio files/Denoised/sure_soft.wav", sample_rate, denoised_audio)
