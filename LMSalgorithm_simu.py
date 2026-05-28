@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 # --------------------------------------------------
 
 N = 2000
-L = 100
-mu = 0.0005
+L = 10
+mu = 0.1
 
 # --------------------------------------------------
 # Signals
@@ -53,7 +53,28 @@ for n in range(L, N):
     # Update weights
     w = w + mu * x_vec * e[n]
 
+#----------------------------------------------------------
+# MSE kurve
+#----------------------------------------------------------
 fig, axs = plt.subplots(3, 1, figsize=(12, 8))
+
+window = 100
+
+mse_smooth = np.convolve(
+    e**2,
+    np.ones(window) / window,
+    mode='same'
+)
+
+plt.figure(figsize=(10,4))
+plt.plot(mse_smooth)
+
+plt.title("Smoothed MSE Curve for LMS")
+plt.xlabel("Sample n")
+plt.ylabel("Mean Squared Error")
+plt.grid()
+plt.tight_layout()
+plt.show()
 # --------------------------------------------------
 # SNR before LMS
 # --------------------------------------------------

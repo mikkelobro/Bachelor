@@ -10,15 +10,21 @@ T = 2              # Signal duration [s]
 
 N = int(fs * T)
 
-L = 8
-beta = 0.1
+L = 10
+beta = 0.0005
 c = 1e-6
+
+# --------------------------------------------------
+# Sample axis
+# --------------------------------------------------
+
+n = np.arange(N)
 
 # --------------------------------------------------
 # Time axis
 # --------------------------------------------------
 
-t = np.arange(N) / fs
+t = n / fs
 
 # --------------------------------------------------
 # Clean sinus signal
@@ -33,7 +39,6 @@ s = np.sin(2*np.pi*f0*t)
 # --------------------------------------------------
 
 noise = (1 + 0.5*np.sin(2*np.pi*1*t)) * np.random.randn(N)
-
 
 # --------------------------------------------------
 # Noisy signal
@@ -60,21 +65,21 @@ e = np.zeros(N)   # Cleaned signal
 # NLMS algorithm
 # --------------------------------------------------
 
-for n in range(L, N):
+for i in range(L, N):
 
-    x_vec = x_ref[n:n-L:-1]
+    x_vec = x_ref[i:i-L:-1]
 
     # Filter output
-    y[n] = np.dot(w, x_vec)
+    y[i] = np.dot(w, x_vec)
 
     # Error signal
-    e[n] = d[n] - y[n]
+    e[i] = d[i] - y[i]
 
     # Normalization factor
     norm_factor = c + np.dot(x_vec, x_vec)
 
     # NLMS update
-    w = w + (beta / norm_factor) * x_vec * e[n]
+    w = w + (beta / norm_factor) * x_vec * e[i]
 
 # --------------------------------------------------
 # SNR calculation
@@ -102,27 +107,27 @@ print(f"SNR after NLMS: {SNR_after:.2f} dB")
 fig, axs = plt.subplots(4, 1, figsize=(12, 10))
 
 # Clean signal
-axs[0].plot(t, s)
+axs[0].plot(n, s)
 axs[0].set_title("Clean Sinus Signal s(n)")
 axs[0].set_ylabel("Amplitude")
 axs[0].grid()
 
 # Noisy signal
-axs[1].plot(t, d)
+axs[1].plot(n, d)
 axs[1].set_title("Noisy Signal d(n)")
 axs[1].set_ylabel("Amplitude")
 axs[1].grid()
 
 # Estimated noise
-axs[2].plot(t, y)
+axs[2].plot(n, y)
 axs[2].set_title("Estimated Noise y(n)")
 axs[2].set_ylabel("Amplitude")
 axs[2].grid()
 
 # Cleaned signal
-axs[3].plot(t, e)
+axs[3].plot(n, e)
 axs[3].set_title("Cleaned Signal e(n)")
-axs[3].set_xlabel("Time [s]")
+axs[3].set_xlabel("Samples")
 axs[3].set_ylabel("Amplitude")
 axs[3].grid()
 

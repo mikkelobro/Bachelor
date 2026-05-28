@@ -15,6 +15,15 @@ max_duration = 10
 # Load clean audio signal
 # --------------------------------------------------
 
+file_path = "Audio files/No noise/Mikkel_24år.wav"
+s, fs = librosa.load(file_path, sr=None, mono=True)
+
+s = s[:int(max_duration * fs)]
+s = s - np.mean(s)
+
+N = len(s)
+t = np.arange(N) / fs
+
 # Time axis
 t = np.arange(N)
 

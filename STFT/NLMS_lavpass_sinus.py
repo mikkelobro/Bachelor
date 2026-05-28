@@ -1,17 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import chirp
+from scipy.signal import butter, filtfilt
 
 # --------------------------------------------------
 # Parameters
 # --------------------------------------------------
 
-fs = 1000
-T = 2
+fs = 1000          # Sampling frequency
+T = 2              # Signal duration [s]
+
 N = int(fs * T)
 
-L = 5
-beta = 0.1
+L = 10
+beta = 0.0005
 c = 1e-6
 
 # --------------------------------------------------
@@ -27,20 +28,18 @@ n = np.arange(N)
 t = n / fs
 
 # --------------------------------------------------
-# Clean chirp signal
+# Clean sinus signal
 # --------------------------------------------------
 
-f0 = 20
-f1 = 200
+f0 = 10
 
-s = chirp(t, f0=f0, f1=f1, t1=T, method="linear")
+s = np.sin(2*np.pi*f0*t)
 
 # --------------------------------------------------
 # Create non-stationary noise
 # --------------------------------------------------
 
 noise = (1 + 0.5*np.sin(2*np.pi*1*t)) * np.random.randn(N)
-
 
 # --------------------------------------------------
 # Noisy signal
@@ -49,10 +48,15 @@ noise = (1 + 0.5*np.sin(2*np.pi*1*t)) * np.random.randn(N)
 d = s + noise
 
 # --------------------------------------------------
-# Reference noise
+# Reference noise through mild lowpass filter
 # --------------------------------------------------
 
-x_ref = noise + 0.01*np.random.randn(N)
+cutoff = 450  # Hz
+order = 2
+
+b, a = butter(order, cutoff / (fs / 2), btype="low")
+
+x_ref = filtfilt(b, a, noise)
 
 # --------------------------------------------------
 # NLMS initialization
@@ -60,8 +64,8 @@ x_ref = noise + 0.01*np.random.randn(N)
 
 w = np.zeros(L)
 
-y = np.zeros(N)
-e = np.zeros(N)
+y = np.zeros(N)   # Estimated noise
+e = np.zeros(N)   # Cleaned signal
 
 # --------------------------------------------------
 # NLMS algorithm
@@ -106,11 +110,11 @@ print(f"SNR after NLMS: {SNR_after:.2f} dB")
 # Plot
 # --------------------------------------------------
 
-fig, axs = plt.subplots(4, 1, figsize=(12, 10))
+fig, axs = plt.subplots(5, 1, figsize=(12, 12))
 
 # Clean signal
 axs[0].plot(n, s)
-axs[0].set_title("Clean Chirp Signal s(n)")
+axs[0].set_title("Clean Sinus Signal s(n)")
 axs[0].set_ylabel("Amplitude")
 axs[0].grid()
 
@@ -120,18 +124,24 @@ axs[1].set_title("Noisy Signal d(n)")
 axs[1].set_ylabel("Amplitude")
 axs[1].grid()
 
-# Estimated noise
-axs[2].plot(n, y)
-axs[2].set_title("Estimated Noise y(n)")
+# Reference noise
+axs[2].plot(n, x_ref)
+axs[2].set_title("Filtered Reference Noise x_ref(n)")
 axs[2].set_ylabel("Amplitude")
 axs[2].grid()
 
-# Cleaned signal
-axs[3].plot(n, e)
-axs[3].set_title("Cleaned Signal e(n)")
-axs[3].set_xlabel("Samples")
+# Estimated noise
+axs[3].plot(n, y)
+axs[3].set_title("Estimated Noise y(n)")
 axs[3].set_ylabel("Amplitude")
 axs[3].grid()
+
+# Cleaned signal
+axs[4].plot(n, e)
+axs[4].set_title("Cleaned Signal e(n)")
+axs[4].set_xlabel("Samples")
+axs[4].set_ylabel("Amplitude")
+axs[4].grid()
 
 plt.tight_layout()
 plt.show()

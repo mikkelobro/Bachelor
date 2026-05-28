@@ -1,43 +1,31 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import chirp, lfilter
 
 # --------------------------------------------------
 # Parameters
 # --------------------------------------------------
 
-T = 2
-fs = 1000
-N = int(fs * T)
-
+N = 2000
 L = 10
 mu = 0.01
 
 # --------------------------------------------------
-# Time axis
+# Signals
 # --------------------------------------------------
 
-t = np.linspace(0, T, N, endpoint=False)
+t = np.arange(N)
 
-# --------------------------------------------------
-# Clean chirp signal
-# --------------------------------------------------
+# Clean sinus signal
+s = np.sin(2*np.pi*0.01*t)
 
-s = chirp(t, f0=20, f1=200, t1=T, method="linear")
+# Stationary white Gaussian noise
+noise = np.random.randn(N)
 
-# --------------------------------------------------
-# Non-stationary noise
-# --------------------------------------------------
-
-noise = (1 + 0.5*np.sin(2*np.pi*1*t)) * np.random.randn(N)
-
-# --------------------------------------------------
-# Desired signal = clean chirp + noise
-# --------------------------------------------------
-
+# Desired signal
 d = s + noise
+
 # Reference noise
-x = noise + 0.1*np.random.randn(N) #støjen + ekstra hvid gaussisk støj med lavere amplitude
+x = noise + 0.1*np.random.randn(N)
 
 # --------------------------------------------------
 # LMS initialization
@@ -59,35 +47,39 @@ for n in range(L, N):
     # Filter output
     y[n] = np.dot(w, x_vec)
 
-    # Error signal
+    # Error signal / cleaned signal
     e[n] = d[n] - y[n]
 
     # Update weights
     w = w + mu * x_vec * e[n]
 
-fig, axs = plt.subplots(3, 1, figsize=(12, 8))
-
 # --------------------------------------------------
-# MSE curve between clean and cleaned signal
+# MSE curve
 # --------------------------------------------------
 
 window = 100
 
+# Difference between clean and cleaned signal
+error_mse = s - e
+
 mse_smooth = np.convolve(
-    e**2,
+    error_mse**2,
     np.ones(window) / window,
     mode='same'
 )
 
 plt.figure(figsize=(10,4))
-plt.plot(mse_smooth)
 
-plt.title("Smoothed MSE Curve for LMS")
+plt.semilogy(mse_smooth)
+
+plt.title("Smoothed LMS Learning Curve")
 plt.xlabel("Sample n")
-plt.ylabel("Mean Squared Error")
+plt.ylabel("MSE (log scale)")
 plt.grid()
+
 plt.tight_layout()
 plt.show()
+
 # --------------------------------------------------
 # SNR before LMS
 # --------------------------------------------------
@@ -111,6 +103,9 @@ SNR_after = 10 * np.log10(
 print(f"SNR before LMS: {SNR_before:.2f} dB")
 print(f"SNR after LMS: {SNR_after:.2f} dB")
 
+# --------------------------------------------------
+# Signal plots
+# --------------------------------------------------
 
 fig, axs = plt.subplots(4, 1, figsize=(12, 10))
 

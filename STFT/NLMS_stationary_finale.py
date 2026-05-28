@@ -1,58 +1,50 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.signal import chirp
+import librosa
+import soundfile as sf
+import os
 
 # --------------------------------------------------
 # Parameters
 # --------------------------------------------------
 
-fs = 1000
-T = 2
-N = int(fs * T)
-
-L = 5
-beta = 0.1
+L = 8
+beta = 0.005
 c = 1e-6
+max_duration = 10
 
 # --------------------------------------------------
-# Sample axis
+# Load desired signal d(n)
 # --------------------------------------------------
+
+d_file = "Audio files/With noise/Adaptiv/Mest tale.wav"
+d, fs = librosa.load(d_file, sr=None, mono=True)
+
+d = d[:int(max_duration * fs)]
+d = d - np.mean(d)
+d = d / np.max(np.abs(d))
+
+# --------------------------------------------------
+# Load reference signal x_ref(n)
+# --------------------------------------------------
+
+x_ref_file = "Audio files/With noise/Adaptiv/Mest støj.wav"
+x_ref, fs_ref = librosa.load(x_ref_file, sr=fs, mono=True)
+
+x_ref = x_ref[:len(d)]
+x_ref = x_ref - np.mean(x_ref)
+x_ref = x_ref / np.max(np.abs(x_ref))
+
+# --------------------------------------------------
+# Make sure signals have same length
+# --------------------------------------------------
+
+N = min(len(d), len(x_ref))
+
+d = d[:N]
+x_ref = x_ref[:N]
 
 n = np.arange(N)
-
-# --------------------------------------------------
-# Time axis
-# --------------------------------------------------
-
-t = n / fs
-
-# --------------------------------------------------
-# Clean chirp signal
-# --------------------------------------------------
-
-f0 = 20
-f1 = 200
-
-s = chirp(t, f0=f0, f1=f1, t1=T, method="linear")
-
-# --------------------------------------------------
-# Create non-stationary noise
-# --------------------------------------------------
-
-noise = (1 + 0.5*np.sin(2*np.pi*1*t)) * np.random.randn(N)
-
-
-# --------------------------------------------------
-# Noisy signal
-# --------------------------------------------------
-
-d = s + noise
-
-# --------------------------------------------------
-# Reference noise
-# --------------------------------------------------
-
-x_ref = noise + 0.01*np.random.randn(N)
 
 # --------------------------------------------------
 # NLMS initialization
@@ -60,8 +52,8 @@ x_ref = noise + 0.01*np.random.randn(N)
 
 w = np.zeros(L)
 
-y = np.zeros(N)
-e = np.zeros(N)
+y = np.zeros(N)   # Estimated noise
+e = np.zeros(N)   # Error signal / cleaned speech
 
 # --------------------------------------------------
 # NLMS algorithm
@@ -71,36 +63,20 @@ for i in range(L, N):
 
     x_vec = x_ref[i:i-L:-1]
 
-    # Filter output
     y[i] = np.dot(w, x_vec)
 
-    # Error signal
     e[i] = d[i] - y[i]
 
-    # Normalization factor
     norm_factor = c + np.dot(x_vec, x_vec)
 
-    # NLMS update
     w = w + (beta / norm_factor) * x_vec * e[i]
 
 # --------------------------------------------------
-# SNR calculation
+# Save as new file
 # --------------------------------------------------
 
-noise_before = d - s
-
-SNR_before = 10 * np.log10(
-    np.mean(s**2) / np.mean(noise_before**2)
-)
-
-noise_after = e - s
-
-SNR_after = 10 * np.log10(
-    np.mean(s**2) / np.mean(noise_after**2)
-)
-
-print(f"SNR before NLMS: {SNR_before:.2f} dB")
-print(f"SNR after NLMS: {SNR_after:.2f} dB")
+sf.write("Audio files/Denoised/NLMS_statinoary_finale.wav", e, fs) 
+print("Filer gemt: NLMS_statinoary_finale.wav")
 
 # --------------------------------------------------
 # Plot
@@ -108,27 +84,23 @@ print(f"SNR after NLMS: {SNR_after:.2f} dB")
 
 fig, axs = plt.subplots(4, 1, figsize=(12, 10))
 
-# Clean signal
-axs[0].plot(n, s)
-axs[0].set_title("Clean Chirp Signal s(n)")
+axs[0].plot(n, d)
+axs[0].set_title("Desired Signal d(n): Speech-Dominant Recording")
 axs[0].set_ylabel("Amplitude")
 axs[0].grid()
 
-# Noisy signal
-axs[1].plot(n, d)
-axs[1].set_title("Noisy Signal d(n)")
+axs[1].plot(n, x_ref)
+axs[1].set_title("Reference Signal x_ref(n): Noise-Dominant Recording")
 axs[1].set_ylabel("Amplitude")
 axs[1].grid()
 
-# Estimated noise
 axs[2].plot(n, y)
 axs[2].set_title("Estimated Noise y(n)")
 axs[2].set_ylabel("Amplitude")
 axs[2].grid()
 
-# Cleaned signal
 axs[3].plot(n, e)
-axs[3].set_title("Cleaned Signal e(n)")
+axs[3].set_title("Cleaned Speech / Error Signal e(n)")
 axs[3].set_xlabel("Samples")
 axs[3].set_ylabel("Amplitude")
 axs[3].grid()
