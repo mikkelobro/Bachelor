@@ -45,7 +45,7 @@ def soft_threshold(detail_coeffs, threshold):
     return np.sign(detail_coeffs) * np.maximum(np.abs(detail_coeffs) - threshold, 0)
 
 # Load WAV file
-sample_rate, audio = wavfile.read("Audio files/With noise/noisy_stationary.wav")
+sample_rate, audio = wavfile.read("Audio files/With noise/noisy_nonstationary.wav")
 audio = audio / np.max(np.abs(audio))
 
 # Load clean reference signal for SNR calculation
@@ -53,7 +53,7 @@ _, clean_audio = wavfile.read("Audio files/No noise/Mikkel_24år.wav")
 clean_audio = clean_audio / np.max(np.abs(clean_audio))
 
 # Wavelet settings
-wavelet = "db4"
+wavelet = "db8"
 levels = 6
 
 # Number of coarsest detail levels to exclude from thresholding
@@ -86,7 +86,7 @@ for i, detail in enumerate(processed_details):
     sure_thresh = sure_threshold(detail, sigma)
 
     # Universal threshold upper bound (classical SureShrink)
-    universal_thresh = sigma * np.sqrt(2 * np.log(len(detail)))
+    universal_thresh = sigma * np.sqrt(2 * np.log(len(audio)))
 
     # Classical SureShrink threshold
     threshold = min(sure_thresh, universal_thresh)
@@ -154,6 +154,7 @@ plt.xlabel("Time [s]")
 plt.ylabel("Amplitude")
 plt.legend()
 plt.tight_layout()
+plt.grid()
 plt.show()
 
 # Save denoised WAV file

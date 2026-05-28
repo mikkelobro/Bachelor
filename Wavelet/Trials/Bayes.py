@@ -54,7 +54,7 @@ _, clean_audio = wavfile.read(
 clean_audio = clean_audio / np.max(np.abs(clean_audio))
 
 # Wavelet settings
-wavelet = "db4"
+wavelet = "db8"
 levels = 6
 
 # Number of coarsest detail levels to exclude from thresholding
