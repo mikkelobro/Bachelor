@@ -79,7 +79,7 @@ processed_details = details[exclude_coarse_levels:]
 for i, detail in enumerate(processed_details):
 
     # Estimate noise level using MAD estimator
-    sigma = np.median(np.abs(detail)) / 0.6745
+    sigma = np.median(np.abs(detail[-1])) / 0.6745
 
     # BayesShrink threshold
     threshold = bayes_threshold(detail, sigma)
@@ -158,6 +158,7 @@ plt.xlabel("Time [s]")
 plt.ylabel("Amplitude")
 plt.legend()
 plt.tight_layout()
+plt.grid()
 plt.show()
 
 # Save denoised WAV file

@@ -11,70 +11,62 @@ def calculate_snr(clean_signal, test_signal):
     return 10 * np.log10(signal_power / noise_power)
 
 
-def soft_threshold(coeffs, threshold):
-    return np.sign(coeffs) * np.maximum(np.abs(coeffs) - threshold, 0)
 
 
-def neighblock(detail_coeffs, sigma, block_size=16, overlap=4):
+def neighblock(detail_coeffs, sigma, L0=8):
     """
-    NeighBlock thresholding for 1D wavelet detail coefficients.
+    Cai & Silverman (2001) NeighBlock estimator.
 
-    Parameters
-    ----------
-    detail_coeffs : ndarray
-        Wavelet detail coefficients.
-    sigma : float
-        Estimated noise standard deviation.
-    block_size : int
-        Length of each neighborhood block.
-    overlap : int
-        Overlap between neighboring blocks.
-
-    Returns
-    -------
-    ndarray
-        Thresholded coefficients.
+    L0 : length of the central block (jb)
+    L1 : neighboring coefficients on each side
+    L  : length of enlarged block (jB) = L0 + 2*L1
     """
 
     n = len(detail_coeffs)
     output = np.zeros(n)
-    weight_sum = np.zeros(n)
 
-    # Constant used in NeighBlock shrinkage
     lambda_param = 4.50524
 
-    step = block_size - overlap
+    # Recommended NeighBlock choice from the paper:
+    # L0 = floor(log(n)/2)
+    # L1 = max(1, floor(L0/2))
+    if L0 is None:
+        L0 = max(2, int(np.floor(np.log(n) / 2)))
 
-    for start in range(0, n, step):
+    L1 = max(1, L0 // 2)
+    L = L0 + 2 * L1
 
-        end = min(start + block_size, n)
+    # Non-overlapping central blocks (jb)
+    for start in range(0, n, L0):
 
-        block = detail_coeffs[start:end]
+        end = min(start + L0, n)
 
-        # Block energy
-        block_energy = np.sum(block ** 2)
+        # Enlarged neighboring block (jB)
+        big_start = max(0, start - L1)
+        big_end = min(n, end + L1)
 
-        # Shrinkage factor
-        shrink = max(
-            0,
-            1 - (lambda_param * len(block) * sigma**2) / block_energy
-        ) if block_energy > 0 else 0
+        big_block = detail_coeffs[big_start:big_end]
 
-        thresholded_block = shrink * block
+        # S²_(jB)
+        S2 = np.sum(big_block ** 2)
 
-        # Weighted overlap-add reconstruction
-        output[start:end] += thresholded_block
-        weight_sum[start:end] += 1
+        if S2 <= 0:
+            shrink = 0.0
+        else:
+            shrink = max(
+                0.0,
+                (S2 - lambda_param * L * sigma**2) / S2
+            )
 
-    # Avoid division by zero
-    weight_sum[weight_sum == 0] = 1
+        # Only shrink coefficients in the central block (jb)
+        output[start:end] = shrink * detail_coeffs[start:end]
 
-    return output / weight_sum
+    return output
 
 
 # Load noisy WAV file
 sample_rate, audio = wavfile.read(
-    "Audio files/With noise/noisy_nonstationary.wav"
+    "Audio files/With noise/noisy_stationary.wav"
 )
 audio = audio / np.max(np.abs(audio))
 
@@ -107,8 +99,7 @@ for i, detail in enumerate(details):
     thresholded_detail = neighblock(
         detail,
         sigma,
-        block_size=8,
-        overlap= 4
+        L0=None
     )
 
     detail_level = levels - i

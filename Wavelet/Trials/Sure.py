@@ -45,7 +45,7 @@ def soft_threshold(detail_coeffs, threshold):
     return np.sign(detail_coeffs) * np.maximum(np.abs(detail_coeffs) - threshold, 0)
 
 # Load WAV file
-sample_rate, audio = wavfile.read("Audio files/With noise/noisy_nonstationary.wav")
+sample_rate, audio = wavfile.read("Audio files/With noise/noisy_stationary.wav")
 audio = audio / np.max(np.abs(audio))
 
 # Load clean reference signal for SNR calculation
@@ -53,7 +53,7 @@ _, clean_audio = wavfile.read("Audio files/No noise/Mikkel_24år.wav")
 clean_audio = clean_audio / np.max(np.abs(clean_audio))
 
 # Wavelet settings
-wavelet = "db8"
+wavelet = "db10"
 levels = 6
 
 # Number of coarsest detail levels to exclude from thresholding
