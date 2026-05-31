@@ -23,7 +23,7 @@ levels = 6
 
 # Detail levels to remove completely
 # Example: [1, 2] removes D1 and D2
-remove_levels = [1,2]
+remove_levels = [1,2,]
 
 # Perform DWT decomposition
 coeffs = pywt.wavedec(audio, wavelet=wavelet, level=levels)
