@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import chirp
 
+np.random.seed(1)
+
 # --------------------------------------------------
 # Parameters
 # --------------------------------------------------
@@ -92,7 +94,6 @@ for mu in mu_values:
 
     y, e = lms_filter(x, d, mu, L)
 
-    # MSE between clean and cleaned signal
     error = s - e
 
     mse_smooth = np.convolve(
@@ -124,6 +125,68 @@ plt.legend(
     loc='upper right',
     framealpha=0.9
 )
+
+plt.tight_layout()
+plt.show()
+
+# --------------------------------------------------
+# Choose one mu value for signal plots and SNR
+# --------------------------------------------------
+
+mu = 0.1 * mu_max
+
+y, e = lms_filter(x, d, mu, L)
+
+# --------------------------------------------------
+# SNR before LMS
+# --------------------------------------------------
+
+noise_before = d - s
+
+SNR_before = 10 * np.log10(
+    np.mean(s**2) / np.mean(noise_before**2)
+)
+
+# --------------------------------------------------
+# SNR after LMS
+# --------------------------------------------------
+
+noise_after = e - s
+
+SNR_after = 10 * np.log10(
+    np.mean(s**2) / np.mean(noise_after**2)
+)
+
+print(f"\nSelected mu for signal plots and SNR: {mu:.4f}")
+print(f"SNR before LMS: {SNR_before:.2f} dB")
+print(f"SNR after LMS: {SNR_after:.2f} dB")
+
+# --------------------------------------------------
+# Plot signals
+# --------------------------------------------------
+
+fig, axs = plt.subplots(4, 1, figsize=(12, 10))
+
+axs[0].plot(s)
+axs[0].set_title("Original Clean Chirp Signal s(n)")
+axs[0].set_ylabel("Amplitude")
+axs[0].grid()
+
+axs[1].plot(d)
+axs[1].set_title("Noisy Chirp Signal d(n)")
+axs[1].set_ylabel("Amplitude")
+axs[1].grid()
+
+axs[2].plot(y)
+axs[2].set_title("Estimated Noise y(n)")
+axs[2].set_ylabel("Amplitude")
+axs[2].grid()
+
+axs[3].plot(e)
+axs[3].set_title("Cleaned Chirp Signal e(n)")
+axs[3].set_xlabel("Sample n")
+axs[3].set_ylabel("Amplitude")
+axs[3].grid()
 
 plt.tight_layout()
 plt.show()

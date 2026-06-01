@@ -4,7 +4,7 @@ import librosa
 import soundfile as sf
 
 # --- Load audio file ---
-file_path = "Audio files/With noise/noisy_nonstationary.wav"
+file_path = "Audio files/With noise/Bil.wav"
 x, fs = librosa.load(file_path, sr=None, mono=True)
 
 # --- Load clean reference signal ---
@@ -12,15 +12,15 @@ clean_path = "Audio files/No noise/Mikkel_24år.wav"
 s, fs_clean = librosa.load(clean_path, sr=None, mono=True)
 
 # Sørg for samme længde
-s = s[:len(x)]
-x = x[:len(s)]
+#s = s[:len(x)]
+#x = x[:len(s)]
 
 # Fjern DC-offset fra clean signal
 s = s - np.mean(s)
 
 # --- Brug kun de første 10 sekunder hvis ønsket ---
-max_duration = 10
-x = x[:int(max_duration * fs)]
+# max_duration = 10
+#x = x[:int(max_duration * fs)]
 
 # --- Fjern DC-offset ---
 x = x - np.mean(x)
@@ -49,7 +49,7 @@ mag = np.abs(stft_frames)
 phase = np.angle(stft_frames)
 
 # --- Thresholding ---
-threshold_factor = 0.10   # prøv fx 0.05, 0.1, 0.2
+threshold_factor = 0.05  # prøv fx 0.05, 0.1, 0.2
 threshold = threshold_factor * np.max(mag)
 
 mask = mag >= threshold
@@ -63,7 +63,7 @@ x_clean = np.zeros(len(x))
 window_sum = np.zeros(len(x))
 
 frame_idx = 0
-for i in range(0, len(x) - win_size, hop):
+for i in range(0, len(x) - win_size + 1, hop):
     frame_time = np.fft.irfft(stft_clean[:, frame_idx], n=win_size)
     x_clean[i:i + win_size] += frame_time * window
     window_sum[i:i + win_size] += window**2
@@ -76,26 +76,56 @@ x_clean[valid] /= window_sum[valid]
 x_clean = x_clean / np.max(np.abs(x_clean))
 
 
-# --- Beregn SNR før og efter denoising ---
-def calculate_snr(clean_signal, test_signal):
-    noise = test_signal - clean_signal
-    signal_power = np.mean(clean_signal**2)
-    noise_power = np.mean(noise**2)
-    snr = 10 * np.log10(signal_power / noise_power)
-    return snr
+# --- Normaliser alle signaler på samme måde før SNR ---
+def normalize_signal(signal):
+    max_val = np.max(np.abs(signal))
+    if max_val > 0:
+        return signal / max_val
+    return signal
 
 # Sørg for samme længde
-min_len = min(len(s), len(x), len(x_clean))
-s_snr = s[:min_len]
-x_snr = x[:min_len]
-x_clean_snr = x_clean[:min_len]
+#min_len = min(len(s), len(x), len(x_clean))
 
-snr_before = calculate_snr(s_snr, x_snr)
-snr_after = calculate_snr(s_snr, x_clean_snr)
+#s_snr = s[:min_len]
+#x_snr = x[:min_len]
+#x_clean_snr = x_clean[:min_len]
 
-print(f"SNR before denoising: {snr_before:.2f} dB")
-print(f"SNR after denoising: {snr_after:.2f} dB")
-print(f"SNR improvement: {snr_after - snr_before:.2f} dB")
+## Fjern DC-offset fra alle signaler
+#s_snr = s_snr - np.mean(s_snr)
+#x_snr = x_snr - np.mean(x_snr)
+#x_clean_snr = x_clean_snr - np.mean(x_clean_snr)
+
+# Normaliser alle signaler ens
+#s_snr = normalize_signal(s_snr)
+#x_snr = normalize_signal(x_snr)
+#x_clean_snr = normalize_signal(x_clean_snr)
+
+# --- Beregn SNR før og efter denoising ---
+#def calculate_snr(clean_signal, test_signal):
+ #   noise = test_signal - clean_signal
+  #  signal_power = np.mean(clean_signal**2)
+   # noise_power = np.mean(noise**2)
+
+    #if noise_power == 0:
+     #   return np.inf
+
+    #snr = 10 * np.log10(signal_power / noise_power)
+    #return snr
+
+#snr_before = calculate_snr(s_snr, x_snr)
+#snr_after = calculate_snr(s_snr, x_clean_snr)
+
+#print(f"SNR before denoising: {snr_before:.2f} dB")
+#print(f"SNR after denoising: {snr_after:.2f} dB")
+#print(f"SNR improvement: {snr_after - snr_before:.2f} dB")
+
+# Ekstra kontrol
+#noise_before = x_snr - s_snr
+#noise_after = x_clean_snr - s_snr
+
+#print(f"Clean signal power: {np.mean(s_snr**2):.6f}")
+#print(f"Noise power before: {np.mean(noise_before**2):.6f}")
+#print(f"Noise power after: {np.mean(noise_after**2):.6f}")
 
 # --- Gem lydfiler ---
 sf.write("Audio files/Denoised/threshold_cleaned_output.wav", x_clean, fs)

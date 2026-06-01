@@ -9,7 +9,7 @@ from scipy.signal import butter, filtfilt
 # --------------------------------------------------
 
 L = 10
-beta = 0.01
+beta = 1.5
 c = 1e-6
 max_duration = 10
 
@@ -111,7 +111,39 @@ for i in range(L, N):
 
     # NLMS update
     w = w + (beta / norm_factor) * x_vec * e[i]
-    # --------------------------------------------------
+# --------------------------------------------------
+# SNR calculation
+# --------------------------------------------------
+
+# Noise before denoising
+noise_before = d - s
+
+# Noise after denoising
+noise_after = e - s
+
+# Signal power
+signal_power = np.mean(s**2)
+
+# Noise power
+noise_power_before = np.mean(noise_before**2)
+noise_power_after = np.mean(noise_after**2)
+
+# SNR values
+snr_before = 10 * np.log10(signal_power / noise_power_before)
+snr_after = 10 * np.log10(signal_power / noise_power_after)
+
+# Improvement
+snr_improvement = snr_after - snr_before
+
+print("\n------------------------------")
+print("NLMS DENOISING RESULTS")
+print("------------------------------")
+print(f"SNR before denoising : {snr_before:.2f} dB")
+print(f"SNR after denoising  : {snr_after:.2f} dB")
+print(f"Improvement          : {snr_improvement:.2f} dB")
+print("------------------------------")
+
+# --------------------------------------------------
 # MSE curve
 # --------------------------------------------------
 
@@ -127,17 +159,19 @@ plt.figure(figsize=(10,4))
 
 plt.plot(mse_smooth)
 
-plt.title("Smoothed MSE Curve for NLMS")
+plt.title(
+    f"Smoothed MSE Curve for NLMS\n"
+    f"SNR Before = {snr_before:.2f} dB, "
+    f"SNR After = {snr_after:.2f} dB, "
+    f"Improvement = {snr_improvement:.2f} dB"
+)
 
 plt.xlabel("Samples")
-
 plt.ylabel("Mean Squared Error")
-
 plt.grid()
-
 plt.tight_layout()
-
 plt.show()
+
 
 # --------------------------------------------------
 # Save denoised file
@@ -181,3 +215,12 @@ axs[3].grid()
 
 plt.tight_layout()
 plt.show()
+
+plt.figtext(
+    0.15,
+    0.01,
+    f"SNR Before: {snr_before:.2f} dB    "
+    f"SNR After: {snr_after:.2f} dB    "
+    f"Improvement: {snr_improvement:.2f} dB",
+    fontsize=10
+)
