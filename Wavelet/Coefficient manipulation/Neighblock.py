@@ -50,7 +50,7 @@ def neighblock(detail_coeffs, sigma, L0=8):
 
 # Load file
 sample_rate, audio = wavfile.read(
-    "Audio files/With noise/noisy_stationary.wav"
+    "Audio files/With noise/noisy_nonstationary.wav"
 )
 audio = audio / np.max(np.abs(audio))
 
