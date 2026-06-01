@@ -3,33 +3,18 @@ from scipy.io import wavfile
 import pywt
 import matplotlib.pyplot as plt
 
-
 def calculate_snr(clean_signal, test_signal):
     noise = clean_signal - test_signal
     signal_power = np.sum(clean_signal ** 2)
     noise_power = np.sum(noise ** 2)
     return 10 * np.log10(signal_power / noise_power)
 
-
-
-
 def neighblock(detail_coeffs, sigma, L0=8):
-    """
-    Cai & Silverman (2001) NeighBlock estimator.
-
-    L0 : length of the central block (jb)
-    L1 : neighboring coefficients on each side
-    L  : length of enlarged block (jB) = L0 + 2*L1
-    """
-
     n = len(detail_coeffs)
     output = np.zeros(n)
 
     lambda_param = 4.50524
 
-    # Recommended NeighBlock choice from the paper:
-    # L0 = floor(log(n)/2)
-    # L1 = max(1, floor(L0/2))
     if L0 is None:
         L0 = max(2, int(np.floor(np.log(n) / 2)))
 
@@ -41,13 +26,13 @@ def neighblock(detail_coeffs, sigma, L0=8):
 
         end = min(start + L0, n)
 
-        # Enlarged neighboring block (jB)
+        # JB block
         big_start = max(0, start - L1)
         big_end = min(n, end + L1)
 
         big_block = detail_coeffs[big_start:big_end]
 
-        # S²_(jB)
+        # energy
         S2 = np.sum(big_block ** 2)
 
         if S2 <= 0:
@@ -58,29 +43,26 @@ def neighblock(detail_coeffs, sigma, L0=8):
                 (S2 - lambda_param * L * sigma**2) / S2
             )
 
-        # Only shrink coefficients in the central block (jb)
+        # Shrinkage
         output[start:end] = shrink * detail_coeffs[start:end]
 
     return output
 
-
-# Load noisy WAV file
+# Load file
 sample_rate, audio = wavfile.read(
     "Audio files/With noise/noisy_stationary.wav"
 )
 audio = audio / np.max(np.abs(audio))
 
-# Load clean reference
 _, clean_audio = wavfile.read(
     "Audio files/No noise/Mikkel_24år.wav"
 )
 clean_audio = clean_audio / np.max(np.abs(clean_audio))
 
-# Wavelet settings
+# DWT
 wavelet = "db8"
 levels = 6
 
-# Perform wavelet decomposition
 coeffs = pywt.wavedec(audio, wavelet=wavelet, level=levels)
 
 # Split coefficients
@@ -89,13 +71,13 @@ details = coeffs[1:]
 
 thresholded_details = []
 
-# Apply NeighBlock thresholding
+# NeighBlock thresholding
 for i, detail in enumerate(details):
 
-    # Noise estimate from MAD
+    # MAD
     sigma = np.median(np.abs(detail)) / 0.6745
 
-    # Apply NeighBlock shrinkage
+    # Shrinkage
     thresholded_detail = neighblock(
         detail,
         sigma,
@@ -112,7 +94,7 @@ for i, detail in enumerate(details):
 
     thresholded_details.append(thresholded_detail)
 
-# Reconstruct signal
+# Reconstruction
 thresholded_coeffs = [approximation] + thresholded_details
 
 denoised_audio = pywt.waverec(
@@ -125,10 +107,9 @@ denoised_audio = denoised_audio[:len(audio)]
 clean_audio = clean_audio[:len(denoised_audio)]
 audio = audio[:len(denoised_audio)]
 
-# Store for plotting
 plot_audio = denoised_audio.copy()
 
-# Compute SNR
+# SNR
 snr_before = calculate_snr(clean_audio, audio)
 snr_after = calculate_snr(clean_audio, denoised_audio)
 
