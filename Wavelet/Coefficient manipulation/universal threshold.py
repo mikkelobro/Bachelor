@@ -9,19 +9,17 @@ def calculate_snr(clean_signal, test_signal):
     noise_power = np.sum(noise ** 2)
     return 10 * np.log10(signal_power / noise_power)
 
-# Load WAV file
+# Load File
 sample_rate, audio = wavfile.read("Audio files/With noise/noisy_stationary.wav")
 audio = audio / np.max(np.abs(audio))
 
-# Load clean reference signal for SNR calculation
 _, clean_audio = wavfile.read("Audio files/No noise/Mikkel_24år.wav")
 clean_audio = clean_audio / np.max(np.abs(clean_audio))
 
-# Wavelet settings
+# DWT
 wavelet = "db14"
 levels = 6
 
-# Perform DWT decomposition
 coeffs = pywt.wavedec(audio, wavelet=wavelet, level=levels)
 
 # Approximation coefficients
@@ -30,10 +28,8 @@ approximation = coeffs[0]
 # Detail coefficients
 details = coeffs[1:]
 
-# Estimate noise standard deviation from finest detail level (D1)
+# MAD
 sigma = np.median(np.abs(details[-1])) / 0.6745
-
-print(f"Estimated noise standard deviation: {sigma:.6f}")
 
 processed_details = []
 
@@ -58,10 +54,8 @@ for i, detail in enumerate(details):
 
     processed_details.append(processed_detail)
 
-# Reconstruct coefficient list
+# IDWT
 modified_coeffs = [approximation] + processed_details
-
-# Inverse DWT reconstruction
 denoised_audio = pywt.waverec(modified_coeffs, wavelet=wavelet)
 
 # Match original length
@@ -69,7 +63,7 @@ denoised_audio = denoised_audio[:len(audio)]
 clean_audio = clean_audio[:len(denoised_audio)]
 audio = audio[:len(denoised_audio)]
 
-# Calculate SNR
+# SNR
 snr_before = calculate_snr(clean_audio, audio)
 snr_after = calculate_snr(clean_audio, denoised_audio)
 
