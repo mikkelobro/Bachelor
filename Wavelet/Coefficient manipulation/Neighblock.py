@@ -4,7 +4,7 @@ import pywt
 import matplotlib.pyplot as plt
 
 def calculate_snr(clean_signal, test_signal):
-    noise = clean_signal #- test_signal
+    noise = clean_signal - test_signal
     signal_power = np.sum(clean_signal ** 2)
     noise_power = np.sum(noise ** 2)
     return 10 * np.log10(signal_power / noise_power)
@@ -50,7 +50,7 @@ def neighblock(detail_coeffs, sigma, L0=8):
 
 # Load file
 sample_rate, audio = wavfile.read(
-    "Audio files/With noise/Bil.wav"
+    "Audio files/With noise/noisy_nonstationary.wav"
 )
 audio = audio / np.max(np.abs(audio))
 
