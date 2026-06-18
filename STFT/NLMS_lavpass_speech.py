@@ -9,7 +9,7 @@ from scipy.signal import butter, filtfilt
 # --------------------------------------------------
 
 L = 10
-beta = 1.5
+beta = 0.001
 c = 1e-6
 max_duration = 10
 
