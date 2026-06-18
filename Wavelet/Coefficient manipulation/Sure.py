@@ -37,7 +37,7 @@ def soft_threshold(detail_coeffs, threshold):
     return np.sign(detail_coeffs) * np.maximum(np.abs(detail_coeffs) - threshold, 0)
 
 # Load file
-sample_rate, audio = wavfile.read("Audio files/With noise/noisy_stationary.wav")
+sample_rate, audio = wavfile.read("Audio files/With noise/noisy_nonstationary.wav")
 audio = audio / np.max(np.abs(audio))
 
 _, clean_audio = wavfile.read("Audio files/No noise/Mikkel_24år.wav")
